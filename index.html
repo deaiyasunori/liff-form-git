@@ -1,63 +1,52 @@
-const CHANNEL_ACCESS_TOKEN = "ここに取得したチャネルアクセストークンを貼り付け";
-
-// LINEからの通知（Webhook）を受け取る関数
-function doPost(e) {
-  const json = JSON.parse(e.postData.contents);
-  const event = json.events[0];
-
-  if (!event) return;
-
-  // 1. 通知を送ってきたユーザーの LINE ユーザーID を取得
-  const userId = event.source.userId;
-  const replyToken = event.replyToken;
-
-  // 2. LINE APIを叩いて、ユーザーの「表示名（お名前）」を取得する
-  const userName = getUserName(userId);
-
-  // 3. メッセージの内容に応じた処理（例: 「申込み」と送信された場合）
-  if (event.type === 'message' && event.message.text === '申込み') {
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>プロファイルテスト</title>
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background-color: #f8f9fa; }
+    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .status { background-color: #eef9f1; padding: 12px; border-radius: 4px; margin-bottom: 15px; }
+    .info { margin-top: 10px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>食材申込み（テスト表示）</h2>
     
-    // スプレッドシートに記録（例: 日時, ユーザーID, お名前）
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName('シート1') || ss.getSheets()[0];
-    sheet.appendRow([new Date(), userId, userName, "申込み完了"]);
+    <div class="status">
+      <p style="margin: 0;">ログイン状態: <strong id="displayName">取得中...</strong></p>
+    </div>
 
-    // ユーザーに確認メッセージを返信
-    replyMessage(replyToken, `${userName} 様\nお申込みを受け付けました！`);
-  }
+    <div class="info">
+      <p>ユーザーID: <span id="userIdText">-</span></p>
+    </div>
+  </div>
 
-  return ContentService.createTextOutput(JSON.stringify({ content: 'ok' })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// ユーザーIDからLINE表示名を取得する関数
-function getUserName(userId) {
-  const url = `https://api.line.me/v2/bot/profile/${userId}`;
-  const response = UrlFetchApp.fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`
-    },
-    muteHttpExceptions: true
-  });
-  
-  if (response.getResponseCode() === 200) {
-    const data = JSON.parse(response.getContentText());
-    return data.displayName; // LINEのお名前
-  }
-  return "ゲスト";
-}
-
-// 応答メッセージを送る関数
-function replyMessage(replyToken, text) {
-  const url = 'https://api.line.me/v2/bot/message/reply';
-  UrlFetchApp.fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`
-    },
-    method: 'post',
-    payload: JSON.stringify({
-      replyToken: replyToken,
-      messages: [{ type: 'text', text: text }]
-    })
-  });
-}
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      // LIFF初期化
+      liff.init({ liffId: "2011092393-SgriYaD6" })
+        .then(() => {
+          if (!liff.isLoggedIn()) {
+            liff.login();
+          } else {
+            // LINEプロフィールの取得
+            liff.getProfile().then(profile => {
+              document.getElementById('displayName').textContent = profile.displayName + " 様";
+              document.getElementById('userIdText').textContent = profile.userId;
+            }).catch(err => {
+              document.getElementById('displayName').textContent = "プロフィール取得失敗: " + err.message;
+            });
+          }
+        })
+        .catch(err => {
+          document.getElementById('displayName').textContent = "LIFF初期化失敗: " + err.message;
+        });
+    });
+  </script>
+</body>
+</html>
