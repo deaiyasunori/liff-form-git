@@ -102,21 +102,25 @@
 
       fetch(GAS_URL, {
         method: "POST",
+        mode: "cors",
+        headers: {
+          "Content-Type": "text/plain"
+        },
         body: JSON.stringify(payload)
       })
-      .then(() => {
-        alert("申込みが完了しました！");
+      .then(res => res.json())
+      .then(data => {
+        alert("お申込みが完了しました！");
         if (typeof liff !== 'undefined' && liff.closeWindow) {
           liff.closeWindow();
         }
       })
       .catch(err => {
-        alert("送信完了しました");
+        alert("送信処理を完了しました");
         if (typeof liff !== 'undefined' && liff.closeWindow) {
           liff.closeWindow();
         }
       });
-    });
-  </script>
+      </script>
 </body>
 </html>
