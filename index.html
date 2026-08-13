@@ -84,7 +84,7 @@
           document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
         });
     });
-document.getElementById('applyForm').addEventListener('submit', (e) => {
+    document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
@@ -101,14 +101,13 @@ document.getElementById('applyForm').addEventListener('submit', (e) => {
 
       fetch(GAS_URL, {
         method: "POST",
-        mode: "no-cors", // ★CORS制限によるブロックを回避
+        mode: "no-cors",
         headers: {
           "Content-Type": "text/plain"
         },
         body: JSON.stringify(payload)
       })
       .then(() => {
-        // no-corsモードではレスポンス中身が読めないため、送信完了として扱う
         alert("お申込みが完了しました！");
         if (typeof liff !== 'undefined' && liff.closeWindow) {
           liff.closeWindow();
