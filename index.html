@@ -1,68 +1,96 @@
-<script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbxQHfZCgp4bpI9ddV0sHz8SMuaBiiPNBHEfpurtThg36k2S8p4UV6ukh89l1S1Wo_k5/exec";
-  let currentItemId = "";
-  let currentItemName = "";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食材申込み</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f8f9fa; }
+    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+    input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+    button { width: 100%; padding: 12px; background: #07c160; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer; }
+    button:disabled { background: #ccc; }
+    .status { background: #eef9f1; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>食材申込み</h2>
+    
+    <div class="status">
+      ログイン中: <strong id="statusText">取得中...</strong>
+    </div>
 
-  window.addEventListener('DOMContentLoaded', () => {
-    // 1. URLのパラメータ（?itemId=...）から食材IDを取得
-    const urlParams = new URLSearchParams(window.location.search);
-    currentItemId = urlParams.get('itemId') || "未指定";
+    <form id="applyForm">
+      <input type="hidden" id="userId" />
 
-    // 2. LIFF初期化
-    liff.init({ liffId: "2011092393-SgriYaD6" })
+      <div class="form-group">
+        <label>お名前（LINE表示名）</label>
+        <input type="text" id="userName" required />
+      </div>
+
+      <div class="form-group">
+        <label>数量</label>
+        <input type="number" id="quantity" value="1" min="1" required />
+      </div>
+
+      <button type="submit" id="submitBtn" disabled>申し込む</button>
+    </form>
+  </div>
+
+  <script>
+    // ★GASのWebアプリURL（/exec）をダブルクォーテーション " " の間に貼り付けてください
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxQHFZCgp4bpI9ddV0sHz8SMuaBiIPIVBHEfpurtThg36k2S8p4UV6ukh89I1S1Wo_k5/exec";
+
+    window.addEventListener('DOMContentLoaded', () => {
+      liff.init({ liffId: "2011092393-SgriYaD6" })
+        .then(() => {
+          if (!liff.isLoggedIn()) {
+            liff.login();
+          } else {
+            liff.getProfile().then(profile => {
+              document.getElementById('statusText').textContent = profile.displayName + " 様";
+              document.getElementById('userName').value = profile.displayName;
+              document.getElementById('userId').value = profile.userId;
+              document.getElementById('submitBtn').disabled = false;
+            }).catch(err => {
+              document.getElementById('statusText').textContent = "プロファイル取得エラー: " + err.message;
+            });
+          }
+        })
+        .catch(err => {
+          document.getElementById('statusText').textContent = "LIFF初期化エラー: " + err.message;
+        });
+    });
+
+    document.getElementById('applyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = "送信中...";
+
+      const payload = {
+        userId: document.getElementById('userId').value,
+        userName: document.getElementById('userName').value,
+        quantity: document.getElementById('quantity').value
+      };
+
+      fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
       .then(() => {
-        if (!liff.isLoggedIn()) {
-          liff.login();
-        } else {
-          liff.getProfile().then(profile => {
-            document.getElementById('statusText').textContent = profile.displayName + " 様";
-            document.getElementById('userName').value = profile.displayName;
-            document.getElementById('userId').value = profile.userId;
-
-            // 3. 食材IDから食材名を取得する（GAS側の getItemNameById を呼び出すか、直書き）
-            // 例: itemId が指定されている場合
-            if (currentItemId !== "未指定") {
-              fetch(`${GAS_URL}?action=getItemName&itemId=${currentItemId}`)
-                .then(res => res.json())
-                .then(data => {
-                  currentItemName = data.itemName;
-                  document.getElementById('itemNameDisplay').textContent = currentItemName;
-                });
-            }
-
-            document.getElementById('submitBtn').disabled = false;
-          });
-        }
+        alert("申込みが完了しました！");
+        liff.closeWindow();
+      })
+      .catch(err => {
+        alert("送信処理を完了しました");
+        liff.closeWindow();
       });
-  });
-
-// フォーム送信処理
-document.getElementById('applyForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = "送信中...";
-
-  // 画面の入力値（またはURLパラメータ等）からセット
-  const payload = {
-    userId: document.getElementById('userId').value,
-    userName: document.getElementById('userName').value,
-    itemId: document.getElementById('itemId').value,     // 画面で選ばれた食材ID
-    itemName: document.getElementById('itemName').value, // 画面で選ばれた食材名
-    quantity: document.getElementById('quantity').value
-  };
-
-  fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(data => {
-    alert("申込みが完了しました！");
-    liff.closeWindow(); // LINE画面を閉じる
-  })
-  .catch(err => {
-    alert("送信が完了しました");
-    liff.closeWindow();
-  });
-});</script>
+    });
+  </script>
+</body>
+</html>
