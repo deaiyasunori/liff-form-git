@@ -94,14 +94,15 @@
       btn.disabled = true;
       btn.textContent = "送信中...";
 
-      const payload = {
-        userId: document.getElementById('userId').value,
-        userName: document.getElementById('userName').value,
-        itemId: document.getElementById('itemId').value,
-        itemName: document.getElementById('itemName').value,
-        quantity: document.getElementById('quantity').value,
-        dateStr: document.getElementById('dateStr').value
-      };
+  const payload = {
+    userId: document.getElementById('userId').value,
+    itemId: document.getElementById('itemId').value,
+    itemName: document.getElementById('itemName').value,
+    userName: document.getElementById('userName').value,
+    quantity: document.getElementById('quantity').value,
+    remarks: document.getElementById('remarks').value 
+  };
+    
 
       fetch(GAS_URL, {
         method: "POST",
