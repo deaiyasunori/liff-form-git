@@ -71,6 +71,17 @@
 
       liff.init({ liffId: "2011110086-x9ezpxYq" })
         .then(() => {
+          if (!itemId) {
+            const context = liff.getContext();
+            // 必要に応じて context.chatId や type に応じた処理、
+            // または、リッチメッセージ側でパラメータを渡せない場合のフォールバック処理をここに記述できます
+          }
+    
+          // 画面の入力欄にセット
+          document.getElementById('itemId').value = itemId || '';
+          document.getElementById('itemName').value = itemName || '未指定';
+          document.getElementById('dateStr').value = dateStr || '未指定';
+
           if (!liff.isLoggedIn()) {
             liff.login();
           } else {
