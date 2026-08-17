@@ -90,20 +90,29 @@
     });
     document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
+      
+      // ▼ ここで確認メッセージ（OK / キャンセル）を出す
+      const isConfirmed = window.confirm("申し込み完了しました\nLINEに申し込み情報を表示しますか？");
+    
+      if (!isConfirmed) {
+        // キャンセルされた場合は何もしない
+        return;
+      }
+    
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
-
-  const payload = {
-    userId: document.getElementById('userId').value,
-    itemId: document.getElementById('itemId').value,
-    itemName: document.getElementById('itemName').value,
-    userName: document.getElementById('userName').value,
-    quantity: document.getElementById('quantity').value,
-    remarks: document.getElementById('remarks').value 
-  };
     
-
+      const payload = {
+        userId: document.getElementById('userId').value,
+        itemId: document.getElementById('itemId').value,
+        itemName: document.getElementById('itemName').value,
+        userName: document.getElementById('userName').value,
+        quantity: document.getElementById('quantity').value,
+        remarks: document.getElementById('remarks').value,
+        sendLine: true // ← LINE送信を許可するフラグを追加
+      };
+    
       fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
@@ -113,10 +122,10 @@
         body: JSON.stringify(payload)
       })
       .then(() => {
-          alert("お申込みが完了しました！")
-          if (typeof liff !== 'undefined' && liff.closeWindow) {
-              liff.closeWindow();
-          }
+        // アラートは出さずにそのまま画面を閉じる（ブラウザのタイトル表示を防ぐため）
+        if (typeof liff !== 'undefined' && liff.closeWindow) {
+          liff.closeWindow();
+        }
       })
       .catch(err => {
         console.error("送信エラー:", err);
