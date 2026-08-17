@@ -91,20 +91,14 @@
     document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
-      // ▼ ここで確認メッセージ（OK / キャンセル）を出す
-      const isConfirmed = window.confirm("申し込み完了しました\nLINEに申し込み情報を表示しますか？");
+      // ▼ ご希望の確認メッセージに変更
+      const isConfirmed = window.confirm("このままでも申込み完了していますが、LINEに申し込み情報も表示しますか？");
     
-      if (!isConfirmed) {
-          // 【修正】キャンセル（いいえ）が選ばれた場合もウィンドウを閉じる
-          if (typeof liff !== 'undefined' && liff.closeWindow) {
-            liff.closeWindow();
-          }
-          return;
-      }    
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
     
+      // ▼ 「はい」なら true、「いいえ」なら false を sendLine にセットする
       const payload = {
         userId: document.getElementById('userId').value,
         itemId: document.getElementById('itemId').value,
@@ -112,9 +106,10 @@
         userName: document.getElementById('userName').value,
         quantity: document.getElementById('quantity').value,
         remarks: document.getElementById('remarks').value,
-        sendLine: true // ← LINE送信を許可するフラグを追加
+        sendLine: isConfirmed // 「はい」ならLINE送信あり、「いいえ」ならLINE送信なし（データ保存のみ）
       };
     
+      // ▼ 「いいえ」の場合でもPOST処理（GASへの送信）は必ず行う
       fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
@@ -124,7 +119,7 @@
         body: JSON.stringify(payload)
       })
       .then(() => {
-        // アラートは出さずにそのまま画面を閉じる（ブラウザのタイトル表示を防ぐため）
+        // どちらを選んでも処理完了後に画面を閉じる
         if (typeof liff !== 'undefined' && liff.closeWindow) {
           liff.closeWindow();
         }
