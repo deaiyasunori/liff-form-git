@@ -55,6 +55,13 @@
         <label>一言どうぞ</label>
         <input type="text" id="remarks" placeholder="受け渡しに関するご希望など（任意）" />
       </div>
+      <!-- 送信時のオプション選択用チェックボックス -->
+      <div style="margin: 15px 0; text-align: left;">
+        <label style="font-size: 14px; color: #333; display: flex; align-items: center; cursor: pointer;">
+          <input type="checkbox" id="sendLineCheck" checked style="width: 18px; height: 18px; margin-right: 8px;">
+          LINEに申し込み情報（通知）を送信する
+        </label>
+      </div>      
       <button type="submit" id="submitBtn" disabled>申し込む</button>
     </form>
   </div>
@@ -91,13 +98,12 @@
     document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
-      // ▼ ご希望の確認メッセージに変更
-      const isConfirmed = window.confirm("このままでも申込み完了していますが、LINEに申し込み情報も表示しますか？");
-    
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
-    
+      // ▼ チェックボックスのON/OFF（true/false）を取得する
+      const isChecked = document.getElementById('sendLineCheck').checked;
+      
       // ▼ 「はい」なら true、「いいえ」なら false を sendLine にセットする
       const payload = {
         userId: document.getElementById('userId').value,
