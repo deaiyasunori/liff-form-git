@@ -95,10 +95,12 @@
       const isConfirmed = window.confirm("申し込み完了しました\nLINEに申し込み情報を表示しますか？");
     
       if (!isConfirmed) {
-        // キャンセルされた場合は何もしない
-        return;
-      }
-    
+          // 【修正】キャンセル（いいえ）が選ばれた場合もウィンドウを閉じる
+          if (typeof liff !== 'undefined' && liff.closeWindow) {
+            liff.closeWindow();
+          }
+          return;
+      }    
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
