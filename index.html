@@ -58,7 +58,7 @@
       <!-- 送信時のオプション選択用チェックボックス -->
       <div style="margin: 15px 0; text-align: left;">
         <label style="font-size: 14px; color: #333; display: flex; align-items: center; cursor: pointer;">
-          <input type="checkbox" id="sendLineCheck" checked style="width: 18px; height: 18px; margin-right: 8px;">
+          <input type="checkbox" id="sendLineCheck" style="width: 18px; height: 18px; margin-right: 8px;">
           LINEに申し込み情報（通知）を送信する
         </label>
       </div>      
@@ -112,7 +112,7 @@
         userName: document.getElementById('userName').value,
         quantity: document.getElementById('quantity').value,
         remarks: document.getElementById('remarks').value,
-        sendLine: isConfirmed // 「はい」ならLINE送信あり、「いいえ」ならLINE送信なし（データ保存のみ）
+        sendLine: isChecked // 「はい」ならLINE送信あり、「いいえ」ならLINE送信なし（データ保存のみ）
       };
     
       // ▼ 「いいえ」の場合でもPOST処理（GASへの送信）は必ず行う
