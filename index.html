@@ -112,11 +112,20 @@
         },
         body: JSON.stringify(payload)
       })
-      .then(() => {
-        alert("お申込みが完了しました！");
-        if (typeof liff !== 'undefined' && liff.closeWindow) {
-          liff.closeWindow();
-        }
+        .then(() => {
+            // alert("お申込みが完了しました！"); ← この行を削除、またはコメントアウトする
+            
+            // 代わりにボタンのテキストを「完了しました」などに変える
+            const btn = document.getElementById('submitBtn');
+            btn.textContent = "お申込み完了";
+            
+            // 少し待ってからウィンドウを閉じる
+            setTimeout(() => {
+                if (typeof liff !== 'undefined' && liff.closeWindow) {
+                    liff.closeWindow();
+                }
+            }, 1000); // 1秒後に自動で閉じる
+        })
       })
       .catch(err => {
         console.error("送信エラー:", err);
