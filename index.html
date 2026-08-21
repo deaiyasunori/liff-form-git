@@ -97,14 +97,12 @@
     });
     document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
-      // ▼ チェックボックスのON/OFF（true/false）を取得する
+    
       const isChecked = document.getElementById('sendLineCheck').checked;
-      
-      // ▼ 「はい」なら true、「いいえ」なら false を sendLine にセットする
+    
       const payload = {
         userId: document.getElementById('userId').value,
         itemId: document.getElementById('itemId').value,
@@ -112,22 +110,34 @@
         userName: document.getElementById('userName').value,
         quantity: document.getElementById('quantity').value,
         remarks: document.getElementById('remarks').value,
-        sendLine: isChecked // 「はい」ならLINE送信あり、「いいえ」ならLINE送信なし（データ保存のみ）
+        sendLine: isChecked
       };
     
-      // ▼ 「いいえ」の場合でもPOST処理（GASへの送信）は必ず行う
+      // 画面を閉じる専用の安全な処理
+      const safeCloseWindow = () => {
+        if (typeof liff !== 'undefined' && liff.closeWindow) {
+          liff.closeWindow();
+        } else {
+          // LIFFの外で開かれた場合のフォールバック
+          window.close();
+        }
+      };
+    
       fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
-        headers: {
-          "Content-Type": "text/plain"
-        },
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(payload)
       })
       .then(() => {
-        // どちらを選んでも処理完了後に画面を閉じる
-        if (typeof liff !== 'undefined' && liff.closeWindow) {
-          liff.closeWindow();
+        if (!isChecked) {
+          // ▼ チェックボックスが OFF の場合のみアラートを表示
+          // OK を押した後に画面を確実に閉じる
+          alert("お申し込みが完了しました！");
+          safeCloseWindow();
+        } else {
+          // ▼ チェックボックスが ON の場合はLINE通知が届くため、アラートなしで即座に閉じる
+          safeCloseWindow();
         }
       })
       .catch(err => {
