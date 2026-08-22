@@ -70,7 +70,7 @@
       <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
         受付を受け付けました。<br>画面を閉じてトーク画面へお戻りください。
       </p>
-      <button type="button" onclick="safeCloseWindow()" style="background-color: #00B900; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">
+      <button type="button" id="closeBtn" style="background-color: #00B900; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">
         閉じる
       </button>
     </div>
@@ -143,6 +143,15 @@
           // ▼ チェックボックスOFFの時：フォームを隠して完了画面を表示（ポップアップを使わない）
           document.getElementById('applyForm').style.display = 'none';
           document.getElementById('completeMessage').style.display = 'block';
+    
+          // 閉じるボタンが押されたらLIFFを閉じる
+          document.getElementById('closeBtn').onclick = function() {
+            if (typeof liff !== 'undefined' && liff.closeWindow) {
+              liff.closeWindow();
+            } else {
+              window.close();
+            }
+          };
         } else {
           // ▼ チェックボックスONの時：LINE通知が届くため、そのまま画面を閉じる
           safeCloseWindow();
