@@ -64,6 +64,16 @@
       </div>      
       <button type="submit" id="submitBtn" disabled>申し込む</button>
     </form>
+    <!-- 既存の </form> のすぐ下に追加 -->
+    <div id="completeMessage" style="display: none; text-align: center; padding: 40px 20px;">
+      <h2 style="color: #28a745; margin-bottom: 15px;">お申し込みが完了しました！</h2>
+      <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
+        受付を受け付けました。<br>画面を閉じてトーク画面へお戻りください。
+      </p>
+      <button type="button" onclick="safeCloseWindow()" style="background-color: #00B900; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">
+        閉じる
+      </button>
+    </div>
   </div>
 
   <script>
@@ -122,7 +132,6 @@
           window.close();
         }
       };
-    
       fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
@@ -131,12 +140,11 @@
       })
       .then(() => {
         if (!isChecked) {
-          // ▼ チェックボックスが OFF の場合のみアラートを表示
-          // OK を押した後に画面を確実に閉じる
-          alert("お申し込みが完了しました！");
-          safeCloseWindow();
+          // ▼ チェックボックスOFFの時：フォームを隠して完了画面を表示（ポップアップを使わない）
+          document.getElementById('applyForm').style.display = 'none';
+          document.getElementById('completeMessage').style.display = 'block';
         } else {
-          // ▼ チェックボックスが ON の場合はLINE通知が届くため、アラートなしで即座に閉じる
+          // ▼ チェックボックスONの時：LINE通知が届くため、そのまま画面を閉じる
           safeCloseWindow();
         }
       })
@@ -145,7 +153,7 @@
         alert("送信に失敗しました。時間をおいて再度お試しください。");
         btn.disabled = false;
         btn.textContent = "申し込む";
-      });
+      });  
     });
   </script>
 </body>
