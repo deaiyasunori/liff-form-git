@@ -112,11 +112,13 @@
         remarks: document.getElementById('remarks').value,
         sendLine: isChecked
       };
-    // 画面を閉じる安全な関数
+    
+      // 画面を閉じる専用の安全な処理
       const safeCloseWindow = () => {
         if (typeof liff !== 'undefined' && liff.closeWindow) {
           liff.closeWindow();
         } else {
+          // LIFFの外で開かれた場合のフォールバック
           window.close();
         }
       };
@@ -129,33 +131,22 @@
       })
       .then(() => {
         if (!isChecked) {
-          // ▼ チェックボックスが OFF の場合：自前ダイアログを表示
-          const modal = document.getElementById('customModal');
-          modal.style.display = 'flex'; // モーダルを表示
-    
-          // OKボタンを押したら画面を閉じる
-          document.getElementById('modalOkBtn').onclick = () => {
-            safeCloseWindow();
-          };
+          // ▼ チェックボックスが OFF の場合のみアラートを表示
+          // OK を押した後に画面を確実に閉じる
+          alert("お申し込みが完了しました！");
+          safeCloseWindow();
         } else {
-          // ▼ チェックボックスが ON の場合：通知が届くため即座に閉じる
+          // ▼ チェックボックスが ON の場合はLINE通知が届くため、アラートなしで即座に閉じる
           safeCloseWindow();
         }
       })
       .catch(err => {
         console.error("送信エラー:", err);
-        alert("送信に失敗しました。");
+        alert("送信に失敗しました。時間をおいて再度お試しください。");
         btn.disabled = false;
         btn.textContent = "申し込む";
-  });    
+      });
+    });    
   </script>
-  <!-- 完了モーダル（自前のアラート） -->
-  <div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:#fff; border-radius:12px; padding:24px; width:80%; max-width:320px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-      <h3 style="margin-top:0; color:#333; font-size:18px;">お申し込み完了</h3>
-      <p style="color:#666; font-size:14px; margin:16px 0;">お申し込みが完了しました！</p>
-      <button id="modalOkBtn" style="background:#00B900; color:#fff; border:none; padding:10px 24px; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; width:100%;">OK</button>
-    </div>
-  </div>
 </body>
 </html>
