@@ -48,9 +48,11 @@
 
       <div class="form-group">
         <label>数量（指定なければ1）</label>
-        <input type="number" id="quantity" value="1" min="1" required />
-      </div>
-      
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="number" id="quantity" value="1" min="1" required style="flex: 1;" />
+          <input type="text" id="unit" class="readonly-field" readonly style="width: 80px; text-align: center;" placeholder="個" />
+        </div>
+      </div>      
       <div class="form-group">
         <label>一言どうぞ</label>
         <input type="text" id="remarks" placeholder="受け渡しに関するご希望など（任意）" />
@@ -85,6 +87,9 @@
       document.getElementById('itemId').value = urlParams.get('itemId') || '';
       document.getElementById('itemName').value = urlParams.get('itemName') || '未指定';
       document.getElementById('dateStr').value = urlParams.get('dateStr') || '未指定';
+      // URLパラメータから単位を取得してセット（指定がなければ '個' をデフォルトに設定）
+      const unitParam = urlParams.get('unit') || '個';
+      document.getElementById('unit').value = unitParam;
 
       liff.init({ liffId: "2011110086-x9ezpxYq" })
         .then(() => {
@@ -119,6 +124,7 @@
         itemName: document.getElementById('itemName').value,
         userName: document.getElementById('userName').value,
         quantity: document.getElementById('quantity').value,
+        unit: document.getElementById('unit').value,
         remarks: document.getElementById('remarks').value,
         sendLine: isChecked
       };
