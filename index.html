@@ -75,47 +75,76 @@
       </button>
     </div>
   </div>
-
-  <script>
+<script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyHKm0jY9l_tbeKSc0Bnu0Xp-G8HiEh8z9sYfCmDxoukbdAD5Ph7UNxavc034cU9HeP/exec";
 
     window.addEventListener('DOMContentLoaded', () => {
       // URLパラメータから食材情報を取得
       const urlParams = new URLSearchParams(window.location.search);
-      document.getElementById('itemId').value = urlParams.get('itemId') || '';
+      const itemId = urlParams.get('itemId') || '';
+      
+      document.getElementById('itemId').value = itemId;
       document.getElementById('itemName').value = urlParams.get('itemName') || '未指定';
       document.getElementById('dateStr').value = urlParams.get('dateStr') || '未指定';
-      // URLパラメータから単位を取得してセット（指定がなければ '個' をデフォルトに設定）
+
       const unitParam = urlParams.get('unit') || '個';
       document.getElementById('unit').value = unitParam;
 
+      // 1. LIFFの初期化
       liff.init({ liffId: "2011110086-x9ezpxYq" })
-        .then(() => {
+        .then(async () => {
           if (!liff.isLoggedIn()) {
             liff.login();
-          } else {
-            liff.getProfile().then(profile => {
-              document.getElementById('statusText').textContent = profile.displayName + " 様";
-              document.getElementById('userName').value = profile.displayName;
-              document.getElementById('userId').value = profile.userId;
-              document.getElementById('submitBtn').disabled = false;
-            }).catch(err => {
-              document.getElementById('statusText').textContent = "エラー: " + err.message;
-            });
+            return;
           }
+
+          // ユーザー情報の取得
+          try {
+            const profile = await liff.getProfile();
+            document.getElementById('statusText').textContent = profile.displayName + " 様";
+            document.getElementById('userName').value = profile.displayName;
+            document.getElementById('userId').value = profile.userId;
+          } catch (err) {
+            document.getElementById('statusText').textContent = "エラー: " + err.message;
+          }
+
+          // 2. 食材IDがある場合はGASに有効かどうかチェックを入れる
+          if (itemId) {
+            try {
+              const res = await fetch(`${GAS_URL}?itemId=${encodeURIComponent(itemId)}`);
+              const data = await res.json();
+
+              // 申込不可（完売・削除済・入荷以外）ならアラートを出して自動で閉じる
+              if (data && data.canOrder === false) {
+                alert(data.message || "この食材は現在お申し込みできません。");
+                if (typeof liff !== 'undefined' && liff.closeWindow) {
+                  liff.closeWindow();
+                } else {
+                  window.close();
+                }
+                return;
+              }
+            } catch (e) {
+              console.error("在庫チェックエラー:", e);
+            }
+          }
+
+          // 問題がなければ「申し込む」ボタンを有効化
+          document.getElementById('submitBtn').disabled = false;
         })
         .catch(err => {
           document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
         });
     });
+
+    // フォーム送信処理
     document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
-    
+
       const isChecked = document.getElementById('sendLineCheck').checked;
-    
       const payload = {
         userId: document.getElementById('userId').value,
         itemId: document.getElementById('itemId').value,
@@ -126,47 +155,30 @@
         remarks: document.getElementById('remarks').value,
         sendLine: isChecked
       };
-    
-      // 画面を閉じる専用の安全な処理
-      const safeCloseWindow = () => {
-        if (typeof liff !== 'undefined' && liff.closeWindow) {
-          liff.closeWindow();
-        } else {
-          // LIFFの外で開かれた場合のフォールバック
-          window.close();
-        }
-      };
+
       fetch(GAS_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(payload)
       })
-      .then(() => {
-        if (!isChecked) {
-          // ▼ チェックボックスOFFの時：フォームを隠して完了画面を表示（ポップアップを使わない）
-          document.getElementById('applyForm').style.display = 'none';
-          document.getElementById('completeMessage').style.display = 'block';
-    
-          // 閉じるボタンが押されたらLIFFを閉じる
-          document.getElementById('closeBtn').onclick = function() {
-            if (typeof liff !== 'undefined' && liff.closeWindow) {
-              liff.closeWindow();
-            } else {
-              window.close();
-            }
-          };
-        } else {
-          // ▼ チェックボックスONの時：LINE通知が届くため、そのまま画面を閉じる
-          safeCloseWindow();
-        }
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('applyForm').style.display = 'none';
+        document.getElementById('completeMessage').style.display = 'block';
       })
       .catch(err => {
-        console.error("送信エラー:", err);
-        alert("送信に失敗しました。時間をおいて再度お試しください。");
+        alert("送信に失敗しました: " + err.message);
         btn.disabled = false;
         btn.textContent = "申し込む";
-      });  
+      });
+    });
+
+    // 閉じるボタンの処理
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      if (typeof liff !== 'undefined' && liff.closeWindow) {
+        liff.closeWindow();
+      } else {
+        window.close();
+      }
     });
   </script>
 </body>
