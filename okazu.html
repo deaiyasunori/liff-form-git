@@ -119,7 +119,7 @@
         window.onload = async function() {
             try {
                 // ご自身のLIFF IDに書き換えてください（または環境に合わせて設定）
-                await liff.init({ liffId: "2011110086-x9ezpxYq"; }); 
+                await liff.init({ liffId: "2011110086-x9ezpxYq" });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     currentUserId = profile.userId;
