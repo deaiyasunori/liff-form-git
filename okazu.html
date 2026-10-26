@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>みんなのおかず投稿</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f7f9fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h2 {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        textarea {
+            resize: vertical;
+            height: 90px;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            background: #f1f3f5;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #06c755; /* LINEグリーン */
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #05b34c;
+        }
+        .btn-submit:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🍳 おかず写真を投稿する</h2>
+        
+        <form id="okazuForm">
+            <div class="form-group">
+                <label for="imageFile">お料理の写真（必須）</label>
+                <input type="file" id="imageFile" accept="image/*" required>
+            </div>
+
+            <div class="form-group">
+                <label for="nickname">ニックネーム（任意）</label>
+                <input type="text" id="nickname" placeholder="例：のんびりパンダ（空欄なら自動生成）">
+            </div>
+
+            <div class="form-group">
+                <label for="comment">登録コメント（任意）</label>
+                <textarea id="comment" placeholder="例：美味しくできました！家族みんな大喜びでした。"></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-submit">投稿してAIに応援してもらう</button>
+            <div id="loading">画像をアップロード中 & AIがコメントを考えています...<br>少々お待ちください✨</div>
+        </form>
+    </div>
+
+    <script>
+        // LIFF初期化＆URLパラメータからの申込ID取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestId = urlParams.get('requestId') || 'ORD-TEST-001'; // テスト用デフォルト値
+        let currentUserId = 'guest';
+
+        window.onload = async function() {
+            try {
+                // ご自身のLIFF IDに書き換えてください（または環境に合わせて設定）
+                await liff.init({ liffId: "YOUR_LIFF_ID" }); 
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    currentUserId = profile.userId;
+                }
+            } catch (err) {
+                console.log("LIFF Initialization failed: " + err);
+            }
+        };
+
+        // フォーム送信時の処理
+        document.getElementById('okazuForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('写真を選択してください。');
+                return;
+            }
+
+            const nickname = document.getElementById('nickname').value;
+            const comment = document.getElementById('comment').value;
+
+            // ローディング表示
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+
+            // 画像をBase64に変換
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function() {
+                const base64Image = reader.result;
+
+                // 送信データ構築
+                const postData = {
+                    action: 'upload_okazu',
+                    requestId: requestId,
+                    userId: currentUserId,
+                    nickname: nickname,
+                    comment: comment,
+                    image: base64Image
+                };
+
+                // GASのウェブアプリURLへ送信
+                const GAS_URL = 'YOUR_GAS_WEB_APP_URL'; // ★ご自身のGASのウェブアプリURLに書き換え
+
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(postData),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('投稿が完了しました！LINEをご確認ください♪');
+                        if (liff.isInClient()) {
+                            liff.closeWindow();
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('エラーが発生しました: ' + (data.message || '不明なエラー'));
+                        resetForm();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('通信エラーが発生しました。');
+                    resetForm();
+                });
+            };
+        });
+
+        function resetForm() {
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
