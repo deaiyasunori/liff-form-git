@@ -114,16 +114,23 @@
         // LIFF初期化＆URLパラメータからの申込ID取得
         const urlParams = new URLSearchParams(window.location.search);
         const requestId = urlParams.get('requestId') || 'ORD-TEST-001'; // テスト用デフォルト値
-        let currentUserId = 'guest';
+        let currentUserId = '';
 
         window.onload = async function() {
             try {
-                // ご自身のLIFF IDに書き換えてください（または環境に合わせて設定）
                 await liff.init({ liffId: "2011110086-x9ezpxYq" });
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    currentUserId = profile.userId;
+                
+                // LINEアプリ内から開いている場合、未ログインなら自動ログインを促す
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
                 }
+
+                // ログイン済みなのを確認してプロフィール（userId）を取得
+                const profile = await liff.getProfile();
+                currentUserId = profile.userId;
+                console.log("取得成功 userId:", currentUserId);
+
             } catch (err) {
                 console.log("LIFF Initialization failed: " + err);
             }
@@ -157,7 +164,7 @@
                 const postData = {
                     action: 'upload_okazu',
                     requestId: requestId,
-                    userId: currentUserId,
+                    userId: currentUserId, // 取得したLINEのuserIdを送信
                     nickname: nickname,
                     comment: comment,
                     image: base64Image
