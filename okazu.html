@@ -195,20 +195,21 @@
       })
       .then(response => response.json())
       .then(data => {
+        // ローディングのくるくるを消す
+        document.getElementById('loading').style.display = 'none';
+        
         if (data.status === 'success') {
-          // alertを廃止し、リポジトリ名が表示されないようにダイアログなしで直接ウィンドウを閉じる
+          // 自動で閉じる代わりに、完了メッセージと「閉じる」ボタンを表示してみる
+          alert('投稿が完了しました！');
           if (liff.isInClient()) {
             liff.closeWindow();
-          } else {
-            alert('投稿が完了しました！LINEをご確認ください♪');
-            window.location.reload();
           }
         } else {
           alert('エラーが発生しました: ' + (data.message || '不明なエラー'));
           resetForm();
         }
       })
-      .catch(error => {
+        .catch(error => {
         console.error('Error:', error);
         alert('通信エラーが発生しました。');
         resetForm();
