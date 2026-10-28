@@ -133,20 +133,20 @@
   
   // ★ GASのURLを格納する変数（最初は空）
   let GAS_URL = '';
-
   window.onload = async function() {
     try {
-      // ★ 1. まず最初にご自身のGASに「URLを教えて」と問い合わせてセットする
-      // （※この窓口となるベースのURLだけは初回接続用として必要になりますが、
-      //  デプロイし直してURLの末尾が変わっても、getService().getUrl()で自動追従します）
-      const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+      const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
       
+      console.log("GASへ設定(URL)を問い合わせ中...");
       const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
       const configData = await configRes.json();
+      
       if (configData && configData.webAppUrl) {
         GAS_URL = configData.webAppUrl;
+        console.log("✅ 【成功】GASのgetConfigから動的URLを取得しました:", GAS_URL);
       } else {
         GAS_URL = BASE_GAS_URL;
+        console.warn("⚠️ 【フォールバック】getConfigからURLが取れなかったため、BASE_GAS_URLを使用します:", GAS_URL);
       }
 
       // 2. LIFFの初期化
@@ -159,10 +159,11 @@
       currentUserId = profile.userId;
       console.log("取得成功 userId:", currentUserId);
     } catch (err) {
-      console.log("Initialization failed: " + err);
+      console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
+      // エラー時はフォールバック
+      GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
     }
   };
-
   // フォーム送信時の処理
   document.getElementById('okazuForm').addEventListener('submit', function(e) {
     e.preventDefault();
