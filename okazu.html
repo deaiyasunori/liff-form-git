@@ -118,7 +118,7 @@
       <label for="comment">登録コメント（任意）</label>
       <textarea id="comment" placeholder="例：野菜セットで美味しくできました！家族みんな大喜びでした。"></textarea>
     </div>
-    <button type="submit" id="submitBtn" class="btn-submit">投稿する</button>
+    <button type="submit" id="submitBtn" class="btn-submit" disabled>読み込み中...</button>
     <div id="loading">
       <div class="spinner"></div><br>
       画像をアップロード中 & あっこAIがコメントを考えています...<br>少々お待ちください✨
@@ -164,6 +164,9 @@
       GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
     }
   };
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').innerText = '投稿する';
+ 
   // フォーム送信時の処理
   document.getElementById('okazuForm').addEventListener('submit', function(e) {
     e.preventDefault();
