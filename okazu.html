@@ -125,27 +125,41 @@
     </div>
   </form>
 </div>
-
 <script>
   // LIFF初期化＆URLパラメータからの申込ID取得
   const urlParams = new URLSearchParams(window.location.search);
   const requestId = urlParams.get('requestId') || 'ORD-TEST-001'; // テスト用デフォルト値
   let currentUserId = '';
+  
+  // ★ GASのURLを格納する変数（最初は空）
+  let GAS_URL = '';
 
   window.onload = async function() {
     try {
+      // ★ 1. まず最初にご自身のGASに「URLを教えて」と問い合わせてセットする
+      // （※この窓口となるベースのURLだけは初回接続用として必要になりますが、
+      //  デプロイし直してURLの末尾が変わっても、getService().getUrl()で自動追従します）
+      const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+      
+      const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
+      const configData = await configRes.json();
+      if (configData && configData.webAppUrl) {
+        GAS_URL = configData.webAppUrl;
+      } else {
+        GAS_URL = BASE_GAS_URL;
+      }
+
+      // 2. LIFFの初期化
       await liff.init({ liffId: "2011110086-x9ezpxYq" });
-      // LINEアプリ内から開いている場合、未ログインなら自動ログインを促す
       if (!liff.isLoggedIn()) {
         liff.login();
         return;
       }
-      // ログイン済みなのを確認してプロフィール（userId）を取得
       const profile = await liff.getProfile();
       currentUserId = profile.userId;
       console.log("取得成功 userId:", currentUserId);
     } catch (err) {
-      console.log("LIFF Initialization failed: " + err);
+      console.log("Initialization failed: " + err);
     }
   };
 
@@ -183,10 +197,10 @@
         image: base64Image
       };
 
-      // GASのウェブアプリURLへ送信
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+      // ★ 動的に取得した GAS_URL を使って送信
+      const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
 
-      fetch(GAS_URL, {
+      fetch(targetUrl, {
         method: 'POST',
         body: JSON.stringify(postData),
         headers: {
@@ -199,7 +213,6 @@
         document.getElementById('loading').style.display = 'none';
         
         if (data.status === 'success') {
-          // 自動で閉じる代わりに、完了メッセージと「閉じる」ボタンを表示してみる
           alert('投稿が完了しました！');
           if (liff.isInClient()) {
             liff.closeWindow();
@@ -209,7 +222,7 @@
           resetForm();
         }
       })
-        .catch(error => {
+      .catch(error => {
         console.error('Error:', error);
         alert('通信エラーが発生しました。');
         resetForm();
