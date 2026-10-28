@@ -75,86 +75,105 @@
       </button>
     </div>
   </div>
-<script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+  <script>
+    // 1. 最初は空にしておき、動的にセットする
+    let GAS_URL = "";
+  
     function showAlert(message, callback) {
       const modal = document.getElementById('customAlert');
       document.getElementById('alertMessage').textContent = message;
       modal.style.display = 'flex';
-  
       document.getElementById('alertOkBtn').onclick = () => {
         modal.style.display = 'none';
         if (callback) callback();
       };
     }
-    window.addEventListener('DOMContentLoaded', () => {
+  
+    window.addEventListener('DOMContentLoaded', async () => {
       // URLパラメータから食材情報を取得
       const urlParams = new URLSearchParams(window.location.search);
       const itemId = urlParams.get('itemId') || '';
-      
       document.getElementById('itemId').value = itemId;
       document.getElementById('itemName').value = urlParams.get('itemName') || '未指定';
       document.getElementById('dateStr').value = urlParams.get('dateStr') || '未指定';
-
       const unitParam = urlParams.get('unit') || '個';
       document.getElementById('unit').value = unitParam;
-
+  
+      try {
+        // ★【ポイント】ここでGASから動的にURL（自身のエンドポイント）を取得します
+        // ※GitHub PagesからGASを叩く場合、最初の窓口となるGASの公開URLを指定するか、
+        //   あるいは環境に合わせてURLを解決します。
+        const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+        
+        const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
+        const configData = await configRes.json();
+        if (configData && configData.webAppUrl) {
+          GAS_URL = configData.webAppUrl;
+        } else {
+          GAS_URL = BASE_GAS_URL; // フォールバック
+        }
+      } catch (e) {
+        console.error("URL動的取得エラー:", e);
+        GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+      }
+  
       // 1. LIFFの初期化
-      liff.init({ liffId: "2011110086-x9ezpxYq" })
-        .then(async () => {
-          if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
-          }
-
-          // ユーザー情報の取得
+      liff.init({
+        liffId: "2011110086-x9ezpxYq"
+      })
+      .then(async () => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+  
+        // ユーザー情報の取得
+        try {
+          const profile = await liff.getProfile();
+          document.getElementById('statusText').textContent = profile.displayName + " 様";
+          document.getElementById('userName').value = profile.displayName;
+          document.getElementById('userId').value = profile.userId;
+        } catch (err) {
+          document.getElementById('statusText').textContent = "エラー: " + err.message;
+        }
+  
+        // 2. 食材IDがある場合はGASに有効かどうかチェックを入れる
+        if (itemId) {
           try {
-            const profile = await liff.getProfile();
-            document.getElementById('statusText').textContent = profile.displayName + " 様";
-            document.getElementById('userName').value = profile.displayName;
-            document.getElementById('userId').value = profile.userId;
-          } catch (err) {
-            document.getElementById('statusText').textContent = "エラー: " + err.message;
-          }
-
-          // 2. 食材IDがある場合はGASに有効かどうかチェックを入れる
-          if (itemId) {
-            try {
-              const res = await fetch(`${GAS_URL}?itemId=${encodeURIComponent(itemId)}`);
-              const data = await res.json();
-
-              // 申込不可（完売・削除済・入荷以外）ならアラートを出して自動で閉じる
-              if (data && data.canOrder === false) {
-                showAlert(data.message || "この食材は現在お申し込みできません。", () => {
-                  if (typeof liff !== 'undefined' && liff.closeWindow) {
-                    liff.closeWindow();
-                  } else {
-                    window.close();
-                  }
-                });
-                return;
-              }
-              
-            } catch (e) {
-              console.error("在庫チェックエラー:", e);
+            const res = await fetch(`${GAS_URL}?itemId=${encodeURIComponent(itemId)}`);
+            const data = await res.json();
+            
+            // 申込不可（完売・削除済・入荷以外）ならアラートを出して自動で閉じる
+            if (data && data.canOrder === false) {
+              showAlert(data.message || "この食材は現在お申し込みできません。", () => {
+                if (typeof liff !== 'undefined' && liff.closeWindow) {
+                  liff.closeWindow();
+                } else {
+                  window.close();
+                }
+              });
+              return;
             }
+          } catch (e) {
+            console.error("在庫チェックエラー:", e);
           }
-
-          // 問題がなければ「申し込む」ボタンを有効化
-          document.getElementById('submitBtn').disabled = false;
-        })
-        .catch(err => {
-          document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
-        });
+        }
+  
+        // 問題がなければ「申し込む」ボタンを有効化
+        document.getElementById('submitBtn').disabled = false;
+      })
+      .catch(err => {
+        document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
+      });
     });
-
+  
     // フォーム送信処理
     document.getElementById('applyForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = "送信中...";
-
+  
       const isChecked = document.getElementById('sendLineCheck').checked;
       const payload = {
         userId: document.getElementById('userId').value,
@@ -166,7 +185,7 @@
         remarks: document.getElementById('remarks').value,
         sendLine: isChecked
       };
-
+  
       fetch(GAS_URL, {
         method: "POST",
         body: JSON.stringify(payload)
@@ -182,7 +201,7 @@
         btn.textContent = "申し込む";
       });
     });
-
+  
     // 閉じるボタンの処理
     document.getElementById('closeBtn').addEventListener('click', () => {
       if (typeof liff !== 'undefined' && liff.closeWindow) {
