@@ -1,249 +1,274 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>みんなのおかず投稿</title>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #f7f9fa;
-    color: #333;
-    margin: 0;
-    padding: 20px;
-  }
-  .container {
-    max-width: 500px;
-    margin: 0 auto;
-    background: #fff;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  }
-  h2 {
-    font-size: 1.2rem;
-    color: #2c3e50;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  .form-group {
-    margin-bottom: 20px;
-  }
-  label {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #555;
-  }
-  input[type="text"], textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-sizing: border-box;
-    font-size: 1rem;
-  }
-  textarea {
-    resize: vertical;
-    height: 90px;
-  }
-  input[type="file"] {
-    width: 100%;
-    padding: 8px;
-    background: #f1f3f5;
-    border-radius: 8px;
-    border: 1px dashed #ccc;
-  }
-  .btn-submit {
-    width: 100%;
-    background-color: #06c755; /* LINEグリーン */
-    color: white;
-    border: none;
-    padding: 14px;
-    font-size: 1rem;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .btn-submit:hover {
-    background-color: #05b34c;
-  }
-  .btn-submit:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-  
-  /* ローディングスピナー（くるくる）のスタイル */
-  #loading {
-    display: none;
-    text-align: center;
-    margin-top: 15px;
-    color: #666;
-    font-size: 0.9rem;
-    line-height: 1.5;
-  }
-  .spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(6, 199, 85, 0.2);
-    border-radius: 50%;
-    border-top-color: #06c755;
-    animation: spin 0.8s ease-in-out infinite;
-    vertical-align: middle;
-    margin-bottom: 8px;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>みんなのおかず投稿</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f7f9fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        h2 {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        textarea {
+            resize: vertical;
+            height: 90px;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            background: #f1f3f5;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #06c755;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #05b34c;
+        }
+        .btn-submit:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 画面全体を覆う目立つローディングオーバーレイ */
+        #loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .loading-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .spinner {
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            border: 5px solid rgba(6, 199, 85, 0.2);
+            border-radius: 50%;
+            border-top-color: #06c755;
+            animation: spin 0.8s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
- <div class="container">
-  <h2>🍳 おかず写真を投稿する</h2>
-  <!-- ★ここにID表示用の枠を追加 -->
-  <div id="debugUserId" style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 15px; word-break: break-all;">ユーザーID確認中...</div>
-  <form id="okazuForm">
-    <div class="form-group">
-      <label for="imageFile">お料理の写真（必須）</label>
-      <input type="file" id="imageFile" accept="image/*" required>
-    </div>
-    <div class="form-group">
-      <label for="nickname">ニックネーム（任意）</label>
-      <input type="text" id="nickname" placeholder="例：のんびりパンダ（空欄なら自動生成）">
-    </div>
-    <div class="form-group">
-      <label for="comment">登録コメント（任意）</label>
-      <textarea id="comment" placeholder="例：野菜セットで美味しくできました！家族みんな大喜びでした。"></textarea>
-    </div>
-    <button type="submit" id="submitBtn" class="btn-submit" disabled>読み込み中...</button>
-    <div id="loading">
-      <div class="spinner"></div><br>
-      画像をアップロード中 & あっこAIがコメントを考えています...<br>少々お待ちください✨
-    </div>
-  </form>
-</div>
-<script>
-  // LIFF初期化＆URLパラメータからの申込ID取得
-  const urlParams = new URLSearchParams(window.location.search);
-  const requestId = urlParams.get('requestId') || 'ORD-TEST-001'; // テスト用デフォルト値
-  let currentUserId = '';
-  
-  // ★ GASのURLを格納する変数（最初は空）
-  let GAS_URL = '';
-  window.onload = async function() {
-    try {
-      const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
-      
-      console.log("GASへ設定(URL)を問い合わせ中...");
-      const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
-      const configData = await configRes.json();
-      
-      if (configData && configData.webAppUrl) {
-        GAS_URL = configData.webAppUrl;
-        console.log("✅ 【成功】GASのgetConfigから動的URLを取得しました:", GAS_URL);
-      } else {
-        GAS_URL = BASE_GAS_URL;
-        console.warn("⚠️ 【フォールバック】getConfigからURLが取れなかったため、BASE_GAS_URLを使用します:", GAS_URL);
-      }
-
-      // 2. LIFFの初期化
-      await liff.init({ liffId: "2011110086-cHHAa0m8" });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-    const profile = await liff.getProfile();
-    currentUserId = profile.userId;
-    console.log("取得成功 userId:", currentUserId);
-    // ★ 取得したIDを画面に表示する
-    document.getElementById('debugUserId').innerText = "ログインID: " + currentUserId;
-    } catch (err) {
-        console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
-        // ★ エラー時も画面に表示する
-        document.getElementById('debugUserId').innerText = "⚠️ ユーザーIDの取得に失敗しました";
-        // エラー時はフォールバック
-        GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
-    }
-  };
-  document.getElementById('submitBtn').disabled = false;
-  document.getElementById('submitBtn').innerText = '投稿する';
- 
-  // フォーム送信時の処理
-  document.getElementById('okazuForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const fileInput = document.getElementById('imageFile');
-    const file = fileInput.files[0];
-    if (!file) {
-      alert('写真を選択してください。');
-      return;
-    }
-
-    const nickname = document.getElementById('nickname').value;
-    const comment = document.getElementById('comment').value;
-
-    // ローディング表示（ボタン無効化 ＆ クルクル表示）
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('loading').style.display = 'block';
-
-    // 画像をBase64に変換
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function() {
-      const base64Image = reader.result;
-
-      // 送信データ構築
-      const postData = {
-        action: 'upload_okazu',
-        requestId: requestId,
-        userId: currentUserId, // 取得したLINEのuserIdを送信
-        nickname: nickname,
-        comment: comment,
-        image: base64Image
-      };
-
-      // ★ 動的に取得した GAS_URL を使って送信
-      const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
-
-      fetch(targetUrl, {
-        method: 'POST',
-        body: JSON.stringify(postData),
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        // ローディングのくるくるを消す
-        document.getElementById('loading').style.display = 'none';
+    <div class="container">
+        <h2>🍳 おかず写真を投稿する</h2>
         
-        if (data.status === 'success') {
-          alert('投稿が完了しました！');
-          if (liff.isInClient()) {
-            liff.closeWindow();
-          }
-        } else {
-          alert('エラーが発生しました: ' + (data.message || '不明なエラー'));
-          resetForm();
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('通信エラーが発生しました。');
-        resetForm();
-      });
-    };
-  });
+        <div id="debugUserId" style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 15px; word-break: break-all;">ユーザーID確認中...</div>
 
-  function resetForm() {
-    document.getElementById('submitBtn').disabled = false;
-    document.getElementById('loading').style.display = 'none';
-  }
-</script>
+        <form id="okazuForm">
+            <div class="form-group">
+                <label for="imageFile">お料理の写真（必須）</label>
+                <input type="file" id="imageFile" accept="image/*" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="nickname">ニックネーム（任意）</label>
+                <input type="text" id="nickname" placeholder="例：のんびりパンダ（空欄なら自動生成）">
+            </div>
+
+            <div class="form-group">
+                <label for="comment">登録コメント（任意）</label>
+                <textarea id="comment" placeholder="例：野菜セットで美味しくできました！家族みんな大喜びでした。"></textarea>
+            </div>
+
+            <!-- 初期状態は非活性 -->
+            <button type="submit" id="submitBtn" class="btn-submit" disabled>読み込み中...</button>
+        </form>
+    </div>
+
+    <!-- 目立つように中央配置したローディング画面 -->
+    <div id="loading">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div style="font-weight: bold; color: #2c3e50; font-size: 1rem; margin-bottom: 5px;">AIがおかず見てます...</div>
+            <div style="color: #666; font-size: 0.85rem;">画像をアップロード中・少々お待ちください✨</div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestId = urlParams.get('requestId') || 'ORD-TEST-001';
+        
+        let currentUserId = '';
+        let GAS_URL = '';
+
+        window.onload = async function() {
+            try {
+                const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
+                
+                console.log("GASへ設定(URL)を問い合わせ中...");
+                const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
+                const configData = await configRes.json();
+                
+                if (configData && configData.webAppUrl) {
+                    GAS_URL = configData.webAppUrl;
+                    console.log("✅ 【成功】GASのgetConfigから動的URLを取得しました:", GAS_URL);
+                } else {
+                    GAS_URL = BASE_GAS_URL;
+                    console.warn("⚠️ 【フォールバック】getConfigからURLが取れなかったため、BASE_GAS_URLを使用します:", GAS_URL);
+                }
+
+                await liff.init({ liffId: "2011110086-cHHAa0m8" });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                const profile = await liff.getProfile();
+                currentUserId = profile.userId;
+                console.log("取得成功 userId:", currentUserId);
+
+                document.getElementById('debugUserId').innerText = "ログインID取得完了";
+                
+                // 認証＆ID取得完了後にボタンを有効化
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerText = '投稿する';
+
+            } catch (err) {
+                console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
+                document.getElementById('debugUserId').innerText = "⚠️ ユーザーIDの取得に失敗しました";
+                GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
+                
+                // エラー時でも投稿は試せるようにボタンは有効化する
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerText = '投稿する';
+            }
+        };
+
+        // フォーム送信時の処理
+        document.getElementById('okazuForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('写真を選択してください。');
+                return;
+            }
+
+            const nickname = document.getElementById('nickname').value;
+            const comment = document.getElementById('comment').value;
+
+            // ローディング画面を表示（画面全体にオーバーレイ）
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('submitBtn').disabled = true;
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function() {
+                const base64Image = reader.result;
+                
+                const postData = {
+                    action: 'upload_okazu',
+                    requestId: requestId,
+                    userId: currentUserId,
+                    nickname: nickname,
+                    comment: comment,
+                    image: base64Image
+                };
+
+                const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+
+                fetch(targetUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(postData),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // ローディングを消す
+                    document.getElementById('loading').style.display = 'none';
+
+                    if (data.status === 'success') {
+                        // alertを削除し、そのまま自動でウィンドウを閉じるように変更
+                        if (liff.isInClient()) {
+                            liff.closeWindow();
+                        } else {
+                            alert('投稿が完了しました！');
+                        }
+                    } else {
+                        alert('エラーが発生しました: ' + (data.message || '不明なエラー'));
+                        resetForm();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('loading').style.display = 'none';
+                    alert('通信エラーが発生しました。');
+                    resetForm();
+                });
+            };
+        });
+
+        function resetForm() {
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
