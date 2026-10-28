@@ -103,8 +103,10 @@
 </style>
 </head>
 <body>
-<div class="container">
+ <div class="container">
   <h2>🍳 おかず写真を投稿する</h2>
+  <!-- ★ここにID表示用の枠を追加 -->
+  <div id="debugUserId" style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 15px; word-break: break-all;">ユーザーID確認中...</div>
   <form id="okazuForm">
     <div class="form-group">
       <label for="imageFile">お料理の写真（必須）</label>
@@ -155,13 +157,17 @@
         liff.login();
         return;
       }
-      const profile = await liff.getProfile();
-      currentUserId = profile.userId;
-      console.log("取得成功 userId:", currentUserId);
+    const profile = await liff.getProfile();
+    currentUserId = profile.userId;
+    console.log("取得成功 userId:", currentUserId);
+    // ★ 取得したIDを画面に表示する
+    document.getElementById('debugUserId').innerText = "ログインID: " + currentUserId;
     } catch (err) {
-      console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
-      // エラー時はフォールバック
-      GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
+        console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
+        // ★ エラー時も画面に表示する
+        document.getElementById('debugUserId').innerText = "⚠️ ユーザーIDの取得に失敗しました";
+        // エラー時はフォールバック
+        GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
     }
   };
   document.getElementById('submitBtn').disabled = false;
