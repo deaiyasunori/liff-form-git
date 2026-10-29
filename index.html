@@ -103,7 +103,7 @@
         // ★【ポイント】ここでGASから動的にURL（自身のエンドポイント）を取得します
         // ※GitHub PagesからGASを叩く場合、最初の窓口となるGASの公開URLを指定するか、
         //   あるいは環境に合わせてURLを解決します。
-        const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+        const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbz-8ZnFqbwdXwdxEz5HkJFb07LIZFrOPaaoWWUjeuXj5845gS8s9m2RSfo1VRp_FsTW/exec";
         
         const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
         const configData = await configRes.json();
@@ -114,7 +114,7 @@
         }
       } catch (e) {
         console.error("URL動的取得エラー:", e);
-        GAS_URL = "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+        GAS_URL = "https://script.google.com/macros/s/AKfycbz-8ZnFqbwdXwdxEz5HkJFb07LIZFrOPaaoWWUjeuXj5845gS8s9m2RSfo1VRp_FsTW/exec";
       }
   
       // 1. LIFFの初期化
