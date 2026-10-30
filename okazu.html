@@ -190,7 +190,7 @@
             } catch (err) {
                 console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
                 document.getElementById('debugUserId').innerText = "⚠️ ユーザーIDの取得に失敗しました";
-                GAS_URL = "https://script.google.com/macros/s/AKfycbzqFB6gfvIYGxaOE3JHS_ML1XUwl0mcEFnKdbjy3ERq49aLR7r1zBDDyK-0kGo4IGoC/exec";
+                GAS_URL = "https://script.google.com/macros/s/AKfycbyc5n4PgkcvmtFKgCChDfpxOcIAJ8Y019XYG3gTL95OnemmeiNqNSTahUzq4SDCzhja/exec";
                 
                 // エラー時でも投稿は試せるようにボタンは有効化する
                 document.getElementById('submitBtn').disabled = false;
@@ -230,7 +230,7 @@
                     image: base64Image
                 };
 
-                const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbxbufzSoNFCX6QRXMKcAg1biNevPu1NvVTpjuQZ9pKOOdDNqbBcKzrqY4MEXrxxMuLA/exec";
+                const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbyc5n4PgkcvmtFKgCChDfpxOcIAJ8Y019XYG3gTL95OnemmeiNqNSTahUzq4SDCzhja/exec";
 
                 fetch(targetUrl, {
                     method: 'POST',
