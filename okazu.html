@@ -158,7 +158,7 @@
 
         window.onload = async function() {
             try {
-                const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbyc5n4PgkcvmtFKgCChDfpxOcIAJ8Y019XYG3gTL95OnemmeiNqNSTahUzq4SDCzhja/exec";
+                const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbwwV_aRr_G48vZVBq_LNfMJHI5u-DToBA54cNY5hnpsjjHmssaQSCz7vEklFPOzeAIp/exec";
                 
                 console.log("GASへ設定(URL)を問い合わせ中...");
                 const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
@@ -190,7 +190,7 @@
             } catch (err) {
                 console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
                 document.getElementById('debugUserId').innerText = "⚠️ ユーザーIDの取得に失敗しました";
-                GAS_URL = "https://script.google.com/macros/s/AKfycbyc5n4PgkcvmtFKgCChDfpxOcIAJ8Y019XYG3gTL95OnemmeiNqNSTahUzq4SDCzhja/exec";
+                GAS_URL = "https://script.google.com/macros/s/AKfycbwwV_aRr_G48vZVBq_LNfMJHI5u-DToBA54cNY5hnpsjjHmssaQSCz7vEklFPOzeAIp/exec";
                 
                 // エラー時でも投稿は試せるようにボタンは有効化する
                 document.getElementById('submitBtn').disabled = false;
@@ -230,7 +230,7 @@
                     image: base64Image
                 };
 
-                const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbyc5n4PgkcvmtFKgCChDfpxOcIAJ8Y019XYG3gTL95OnemmeiNqNSTahUzq4SDCzhja/exec";
+                const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbwwV_aRr_G48vZVBq_LNfMJHI5u-DToBA54cNY5hnpsjjHmssaQSCz7vEklFPOzeAIp/exec";
 
                 fetch(targetUrl, {
                     method: 'POST',
