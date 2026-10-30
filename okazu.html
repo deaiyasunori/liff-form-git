@@ -158,20 +158,10 @@
 
         window.onload = async function() {
             try {
-                const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbwwV_aRr_G48vZVBq_LNfMJHI5u-DToBA54cNY5hnpsjjHmssaQSCz7vEklFPOzeAIp/exec";
-                
-                console.log("GASへ設定(URL)を問い合わせ中...");
-                const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
-                const configData = await configRes.json();
-                
-                if (configData && configData.webAppUrl) {
-                    GAS_URL = configData.webAppUrl;
-                    console.log("✅ 【成功】GASのgetConfigから動的URLを取得しました:", GAS_URL);
-                } else {
-                    GAS_URL = BASE_GAS_URL;
-                    console.warn("⚠️ 【フォールバック】getConfigからURLが取れなかったため、BASE_GAS_URLを使用します:", GAS_URL);
-                }
-
+                // 直接、最新のGAS URLをセットする
+                GAS_URL = "https://script.google.com/macros/s/AKfycbwwV_aRr_G48vZVBq_LNfMJHI5u-DToBA54cNY5hnpsjjHmssaQSCz7vEklFPOzeAIp/exec";
+        
+                // LINEログインとユーザーIDの取得のみに集中する
                 await liff.init({ liffId: "2011110086-cHHAa0m8" });
                 if (!liff.isLoggedIn()) {
                     liff.login();
@@ -180,24 +170,20 @@
                 const profile = await liff.getProfile();
                 currentUserId = profile.userId;
                 console.log("取得成功 userId:", currentUserId);
-
+        
                 document.getElementById('debugUserId').innerText = "ログインID取得完了";
-                
-                // 認証＆ID取得完了後にボタンを有効化
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('submitBtn').innerText = '投稿する';
-
+        
             } catch (err) {
-                console.error("❌ 【エラー】初期化またはURL取得に失敗しました:", err);
+                console.error("❌ LIFF初期化エラー:", err);
                 document.getElementById('debugUserId').innerText = "⚠️ ユーザーIDの取得に失敗しました";
-                GAS_URL = "https://script.google.com/macros/s/AKfycbwwV_aRr_G48vZVBq_LNfMJHI5u-DToBA54cNY5hnpsjjHmssaQSCz7vEklFPOzeAIp/exec";
                 
-                // エラー時でも投稿は試せるようにボタンは有効化する
+                // エラー時でも投稿自体は試せるようにする
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('submitBtn').innerText = '投稿する';
             }
         };
-
         // フォーム送信時の処理
         document.getElementById('okazuForm').addEventListener('submit', function(e) {
             e.preventDefault();
