@@ -16,6 +16,8 @@
     button:disabled { background: #ccc; }
     .status { background: #eef9f1; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
   </style>
+  <!-- 各HTMLの <head> 内など、他のJSよりも先に読み込む -->
+  <script src="config.js"></script>
 </head>
 <body>
   <div class="card">
@@ -100,21 +102,17 @@
       document.getElementById('unit').value = unitParam;
   
       try {
-        // ★【ポイント】ここでGASから動的にURL（自身のエンドポイント）を取得します
-        // ※GitHub PagesからGASを叩く場合、最初の窓口となるGASの公開URLを指定するか、
-        //   あるいは環境に合わせてURLを解決します。
-        const BASE_GAS_URL = "https://script.google.com/macros/s/AKfycbyIDAicNzmDWMMyQLk7qXateXItDN62NLq27WIWwFivnWHtEsJPHeLNL58z9qTkF7na/exec";
         
-        const configRes = await fetch(`${BASE_GAS_URL}?action=getConfig`);
+        const configRes = await fetch(`${GAS_API_URL}?action=getConfig`);
         const configData = await configRes.json();
         if (configData && configData.webAppUrl) {
           GAS_URL = configData.webAppUrl;
         } else {
-          GAS_URL = BASE_GAS_URL; // フォールバック
+          GAS_URL = GAS_API_URL; // フォールバック
         }
       } catch (e) {
         console.error("URL動的取得エラー:", e);
-        GAS_URL = "https://script.google.com/macros/s/AKfycbyIDAicNzmDWMMyQLk7qXateXItDN62NLq27WIWwFivnWHtEsJPHeLNL58z9qTkF7na/exec";
+        GAS_URL = GAS_API_URL
       }
   
       // 1. LIFFの初期化
