@@ -101,20 +101,6 @@
       const unitParam = urlParams.get('unit') || '個';
       document.getElementById('unit').value = unitParam;
   
-      try {
-        
-        const configRes = await fetch(`${GAS_API_URL}?action=getConfig`);
-        const configData = await configRes.json();
-        if (configData && configData.webAppUrl) {
-          GAS_URL = configData.webAppUrl;
-        } else {
-          GAS_URL = GAS_API_URL; // フォールバック
-        }
-      } catch (e) {
-        console.error("URL動的取得エラー:", e);
-        GAS_URL = GAS_API_URL
-      }
-  
       // 1. LIFFの初期化
       liff.init({
         liffId: "2011110086-x9ezpxYq"
@@ -184,7 +170,7 @@
         sendLine: isChecked
       };
   
-      fetch(GAS_URL, {
+      fetch(GAS_API_URL, {
         method: "POST",
         body: JSON.stringify(payload)
       })
