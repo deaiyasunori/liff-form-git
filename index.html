@@ -79,7 +79,7 @@
   </div>
   <script>
     // 1. 最初は空にしておき、動的にセットする
-    let GAS_URL = "";
+    let GAS_API_URL = "";
   
     function showAlert(message, callback) {
       const modal = document.getElementById('customAlert');
@@ -124,7 +124,7 @@
         // 2. 食材IDがある場合はGASに有効かどうかチェックを入れる
         if (itemId) {
           try {
-            const res = await fetch(`${GAS_URL}?itemId=${encodeURIComponent(itemId)}`);
+            const res = await fetch(`${GAS_API_URL}?itemId=${encodeURIComponent(itemId)}`);
             const data = await res.json();
             
             // 申込不可（完売・削除済・入荷以外）ならアラートを出して自動で閉じる
