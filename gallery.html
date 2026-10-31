@@ -92,21 +92,18 @@
     <h1>🍳 みんなのおかずギャラリー</h1>
     <div id="loading" class="loading">データを読み込んでいます...</div>
     <div id="gallery" class="gallery-grid"></div>
-    <script>
+<script>
         // デプロイしたGASのWebアプリURLに ?action=gallery をつなげたもの
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyIDAicNzmDWMMyQLk7qXateXItDN62NLq27WIWwFivnWHtEsJPHeLNL58z9qTkF7na/exec?action=gallery";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxwJRr29h2E1pQRWeOA6bogXm50OhJbbnCESS_EWyd-UhKXTc8u_JUht4nYRGESzKVi/exec?action=gallery";
 
         async function fetchGalleryData() {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
             
             try {
-                // ① 通信開始のログを画面に出す
                 if (loadingEl) loadingEl.textContent = "GASへ接続中...";
                 
                 const response = await fetch(GAS_API_URL);
-                
-                // ② ステータスコードの確認
                 if (!response.ok) {
                     throw new Error(`サーバーエラー: ${response.status} ${response.statusText}`);
                 }
@@ -121,8 +118,10 @@
                     return;
                 }
                 
-                // (以下、カード生成の処理が続く...)
-                data.forEach(item => {
+                // データをクリアして再描画時に重複しないようにする
+                galleryEl.innerHTML = "";
+                
+                data.forEach((item, index) => {
                     const card = document.createElement("div");
                     card.className = "card";
                     
@@ -134,6 +133,29 @@
                         }
                     }
                     
+                    // スプレッドシートのチアー列（O列のデータ）を生データとして取得
+                    const rawCheer = item.cheer || ""; 
+                    
+                    // 利用するアイコンの定義
+                    const icons = ["❤️", "👍", "✨", "😋"];
+                    const counts = {};
+                    icons.forEach(icon => counts[icon] = 0);
+                    
+                    // カンマ区切りの文字列からカウントを復元
+                    const cheerEntries = rawCheer ? rawCheer.split(",") : [];
+                    cheerEntries.forEach(entry => {
+                        const parts = entry.split(":");
+                        const icon = parts[0];
+                        if (counts[icon] !== undefined) {
+                            counts[icon]++;
+                        }
+                    });
+
+                    // このブラウザ（ユーザー）が既に押しているアイコンをローカルストレージから取得
+                    const storageKey = `liked_post_${index}`;
+                    const myCurrentIcon = localStorage.getItem(storageKey) || "";
+
+                    // カードHTMLの構築
                     card.innerHTML = `
                         <img src="${imageUrl}" class="card-image" alt="おかず画像" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="card-content">
@@ -150,13 +172,88 @@
                                 <div class="comment-title" style="color: #047857;">✨ AI応援コメント</div>
                                 <div>${item.aiComment || '応援コメント準備中'}</div>
                             </div>
+                            
+                            <!-- いいね（アイコン選択）ボタンエリア -->
+                            <div class="cheer-area" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                                ${icons.map(icon => {
+                                    const isSelected = (myCurrentIcon === icon);
+                                    const bgStyle = isSelected ? "background: #fde68a; border-color: #d97706;" : "background: #f3f4f6; border-color: #e5e7eb;";
+                                    return `
+                                        <button class="cheer-btn" data-row="${index + 2}" data-icon="${icon}" style="cursor: pointer; padding: 4px 10px; border-radius: 20px; border: 1px solid; ${bgStyle} font-size: 0.9rem;">
+                                            ${icon} <span class="count">${counts[icon]}</span>
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     `;
+
+                    // ボタンをクリックしたときの処理（トグル・取り消し・保存対応）
+                    const cheerBtns = card.querySelectorAll(".cheer-btn");
+                    cheerBtns.forEach(btn => {
+                        btn.addEventListener("click", async () => {
+                            const rowIndex = btn.getAttribute("data-row");
+                            const clickedIcon = btn.getAttribute("data-icon");
+                            
+                            let newMyIcon = "";
+                            if (myCurrentIcon === clickedIcon) {
+                                newMyIcon = ""; // 同じものを押したら解除
+                            } else {
+                                newMyIcon = clickedIcon; // 新しく選んだ、または変更
+                            }
+                            
+                            if (newMyIcon) {
+                                localStorage.setItem(storageKey, newMyIcon);
+                            } else {
+                                localStorage.removeItem(storageKey);
+                            }
+                            
+                            // ブラウザ識別IDの取得・生成
+                            let browserId = localStorage.getItem("browser_id");
+                            if (!browserId) {
+                                browserId = 'user_' + Math.random().toString(36).substring(2, 9);
+                                localStorage.setItem("browser_id", browserId);
+                            }
+                            
+                            let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
+                            if (newMyIcon) {
+                                updatedEntries.push(`${newMyIcon}:${browserId}`);
+                            }
+                            
+                            const newCheerValue = updatedEntries.join(",");
+                            
+                            btn.style.opacity = "0.5";
+                            
+                            try {
+                                const response = await fetch(GAS_API_URL.split("?")[0], {
+                                    method: "POST",
+                                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                                    body: JSON.stringify({
+                                        action: "cheer",
+                                        rowIndex: Number(rowIndex),
+                                        cheerValue: newCheerValue
+                                    })
+                                });
+                                
+                                const result = await response.json();
+                                if (result.status === "success") {
+                                    fetchGalleryData(); // 最新データに再描画
+                                } else {
+                                    alert("保存に失敗しました: " + result.message);
+                                }
+                            } catch (err) {
+                                console.error("通信エラー:", err);
+                                alert("通信に失敗しました。");
+                            } finally {
+                                btn.style.opacity = "1";
+                            }
+                        });
+                    });
+
                     galleryEl.appendChild(card);
                 });
         
             } catch (error) {
-                // ③ どこで失敗したかを画面に赤字などでハッキリ表示する
                 if (loadingEl) {
                     loadingEl.style.color = "red";
                     loadingEl.textContent = "エラー発生: " + error.message;
@@ -164,7 +261,6 @@
                 console.error("詳細エラー:", error);
             }
         }
-
         fetchGalleryData();
     </script>
 </body>
