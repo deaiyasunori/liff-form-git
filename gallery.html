@@ -100,23 +100,33 @@
         async function fetchGalleryData() {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
-
+            
             try {
+                // ① 通信開始のログを画面に出す
+                if (loadingEl) loadingEl.textContent = "GASへ接続中...";
+                
                 const response = await fetch(GAS_API_URL);
+                
+                // ② ステータスコードの確認
+                if (!response.ok) {
+                    throw new Error(`サーバーエラー: ${response.status} ${response.statusText}`);
+                }
+                
+                if (loadingEl) loadingEl.textContent = "データを解析中...";
                 const data = await response.json();
-
+                
                 if (loadingEl) loadingEl.style.display = "none";
-
+                
                 if (!data || data.length === 0) {
                     galleryEl.innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>まだ投稿がありません。</p>";
                     return;
                 }
-
+                
+                // (以下、カード生成の処理が続く...)
                 data.forEach(item => {
                     const card = document.createElement("div");
                     card.className = "card";
-
-                    // Googleドライブの画像を綺麗に表示する処理
+                    
                     let imageUrl = item.imageUrl || "";
                     if (imageUrl.includes("drive.google.com")) {
                         const match = imageUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -124,7 +134,7 @@
                             imageUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
                         }
                     }
-
+                    
                     card.innerHTML = `
                         <img src="${imageUrl}" class="card-image" alt="おかず画像" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="card-content">
@@ -133,12 +143,10 @@
                                 <span>📅 ${item.date || ''}</span>
                             </div>
                             <span class="food-badge">食材: ${item.foodName || '未指定'}</span>
-                            
                             <div class="comment-box">
                                 <div class="comment-title">💬 投稿者のコメント</div>
                                 <div>${item.registerComment || 'コメントなし'}</div>
                             </div>
-
                             <div class="comment-box ai-comment">
                                 <div class="comment-title" style="color: #047857;">✨ AI応援コメント</div>
                                 <div>${item.aiComment || '応援コメント準備中'}</div>
@@ -147,10 +155,14 @@
                     `;
                     galleryEl.appendChild(card);
                 });
-
+        
             } catch (error) {
-                if (loadingEl) loadingEl.textContent = "データの読み込みに失敗しました。";
-                console.error(error);
+                // ③ どこで失敗したかを画面に赤字などでハッキリ表示する
+                if (loadingEl) {
+                    loadingEl.style.color = "red";
+                    loadingEl.textContent = "エラー発生: " + error.message;
+                }
+                console.error("詳細エラー:", error);
             }
         }
 
