@@ -112,6 +112,8 @@
             100% { transform: rotate(360deg); }
         }
     </style>
+      <!-- 各HTMLの <head> 内など、他のJSよりも先に読み込む -->
+      <script src="config.js"></script>
 </head>
 <body>
     <div class="container">
@@ -214,7 +216,7 @@
                     image: base64Image
                 };
 
-                const targetUrl = GAS_URL || "https://script.google.com/macros/s/AKfycbyIDAicNzmDWMMyQLk7qXateXItDN62NLq27WIWwFivnWHtEsJPHeLNL58z9qTkF7na/exec";
+                const targetUrl = GAS_API_URL
 
                 fetch(targetUrl, {
                     method: 'POST',
