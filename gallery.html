@@ -141,16 +141,18 @@
                     const counts = {};
                     icons.forEach(icon => counts[icon] = 0);
                     
-                    // カンマ区切りの文字列からカウントを復元
+                    // カンマ区切りの文字列（または単一の文字列）からカウントを復元
                     const cheerEntries = rawCheer ? rawCheer.split(",") : [];
                     cheerEntries.forEach(entry => {
-                        const parts = entry.split(":");
+                        const trimmed = entry.trim();
+                        if (!trimmed) return;
+                        const parts = trimmed.split(":");
                         const icon = parts[0];
                         if (counts[icon] !== undefined) {
                             counts[icon]++;
                         }
                     });
-
+                    
                     // このブラウザ（ユーザー）が既に押しているアイコンをローカルストレージから取得
                     const storageKey = `liked_post_${index}`;
                     const myCurrentIcon = localStorage.getItem(storageKey) || "";
