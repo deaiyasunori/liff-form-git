@@ -94,13 +94,14 @@
     <h1>🍳 みんなのおかずギャラリー</h1>
     <div id="loading" class="loading">データを読み込んでいます...</div>
     <div id="gallery" class="gallery-grid"></div>
-<script>
+
+    <script>
         async function fetchGalleryData() {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
             
             try {
-                if (loadingEl) loadingEl.textContent = "GASへ接続中...";
+                if (loadingEl) loadingEl.textContent = "Galleryへ接続中...";
                 
                 const response = await fetch(`${GAS_API_URL}?action=gallery`);
                 if (!response.ok) {
@@ -214,6 +215,7 @@
                                 localStorage.setItem("browser_id", browserId);
                             }
                             
+                            // 既存のエントリから自分のIDが含まれるものを除外し、新しく選択したものを追加
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
                             if (newMyIcon) {
                                 updatedEntries.push(`${newMyIcon}:${browserId}`);
@@ -236,7 +238,7 @@
                                 
                                 const result = await response.json();
                                 if (result.status === "success") {
-                                    fetchGalleryData(); // 最新データに再描画
+                                    fetchGalleryData(); // 最新データに再描画してカウントを反映
                                 } else {
                                     alert("保存に失敗しました: " + result.message);
                                 }
@@ -260,6 +262,7 @@
                 console.error("詳細エラー:", error);
             }
         }
+
         fetchGalleryData();
     </script>
 </body>
