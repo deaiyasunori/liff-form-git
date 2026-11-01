@@ -18,12 +18,29 @@
             margin-bottom: 20px;
             color: #d97706;
         }
+        .gallery-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        /* 日付ごとの区切り帯のスタイル */
+        .date-divider {
+            grid-column: 1 / -1;
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin: 20px 0 10px 0;
+            border-left: 4px solid #d97706;
+        }
+        .date-divider:first-of-type {
+            margin-top: 0;
+        }
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
-            max-width: 1000px;
-            margin: 0 auto;
         }
         .card {
             background: #fff;
@@ -93,9 +110,38 @@
 
     <h1>🍳 みんなのおかずギャラリー</h1>
     <div id="loading" class="loading">データを読み込んでいます...</div>
-    <div id="gallery" class="gallery-grid"></div>
+    <div id="gallery" class="gallery-container"></div>
 
     <script>
+        // 日時を見やすくフォーマットする関数（例: 2026-10-31 23:48）
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                // ISO形式でない場合はそのまま返すか、綺麗に切り詰める
+                return dateString.replace('T', ' ').replace(/\.\d+Z$/, '');
+            }
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const hh = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${yyyy}/${mm}/${dd} ${hh}:${min}`;
+        }
+
+        // 日付部分（YYYY-MM-DD）のみを取り出す関数（グループ分け用）
+        function getDateOnly(dateString) {
+            if (!dateString) return '日付不明';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return dateString.split('T')[0] || '日付不明';
+            }
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}年${mm}月${dd日}`;
+        }
+
         async function fetchGalleryData() {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
@@ -114,14 +160,37 @@
                 if (loadingEl) loadingEl.style.display = "none";
                 
                 if (!data || data.length === 0) {
-                    galleryEl.innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>まだ投稿がありません。</p>";
+                    galleryEl.innerHTML = "<p style='text-align:center;'>まだ投稿がありません。</p>";
                     return;
                 }
                 
-                // データをクリアして再描画時に重複しないようにする
                 galleryEl.innerHTML = "";
                 
+                // 日付ごとにグループ化するために、日付順（新しい順、または古い順）に整理
+                // ここでは申込日時の降順（新しい順）で並び替え
+                data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+                let currentGroupDate = "";
+                let currentGrid = null;
+
                 data.forEach((item, index) => {
+                    const rawDate = item.date || "";
+                    const groupDateStr = getDateOnly(rawDate);
+
+                    // 日付が変わったら新しい帯とグリッドコンテナを作成
+                    if (groupDateStr !== currentGroupDate) {
+                        currentGroupDate = groupDateStr;
+
+                        const divider = document.createElement("div");
+                        divider.className = "date-divider";
+                        divider.textContent = `📅 ${currentGroupDate}`;
+                        galleryEl.appendChild(divider);
+
+                        currentGrid = document.createElement("div");
+                        currentGrid.className = "gallery-grid";
+                        galleryEl.appendChild(currentGrid);
+                    }
+
                     const card = document.createElement("div");
                     card.className = "card";
                     
@@ -133,15 +202,11 @@
                         }
                     }
                     
-                    // スプレッドシートのチアー列（O列のデータ）を生データとして取得
                     const rawCheer = item.cheer || ""; 
-                    
-                    // 利用するアイコンの定義
                     const icons = ["❤️", "👍", "✨", "😋"];
                     const counts = {};
                     icons.forEach(icon => counts[icon] = 0);
                     
-                    // カンマ区切りの文字列（または単一の文字列）からカウントを復元
                     const cheerEntries = rawCheer ? rawCheer.split(",") : [];
                     cheerEntries.forEach(entry => {
                         const trimmed = entry.trim();
@@ -153,17 +218,20 @@
                         }
                     });
 
-                    // このブラウザ（ユーザー）が既に押しているアイコンをローカルストレージから取得
-                    const storageKey = `liked_post_${index}`;
+                    // 実際の元のデータ配列内でのインデックス（data内での位置）を保持
+                    const originalIndex = data.indexOf(item);
+                    const storageKey = `liked_post_${originalIndex}`;
                     const myCurrentIcon = localStorage.getItem(storageKey) || "";
 
-                    // カードHTMLの構築
+                    // 整形された日時を表示
+                    const formattedDate = formatDateTime(rawDate);
+
                     card.innerHTML = `
                         <img src="${imageUrl}" class="card-image" alt="おかず画像" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="card-content">
                             <div class="meta-info">
                                 <span class="nickname">👤 ${item.nickname || '名無しさん'}</span>
-                                <span>📅 ${item.date || ''}</span>
+                                <span>🕒 ${formattedDate}</span>
                             </div>
                             <span class="food-badge">食材: ${item.foodName || '未指定'}</span>
                             <div class="comment-box">
@@ -181,7 +249,7 @@
                                     const isSelected = (myCurrentIcon === icon);
                                     const bgStyle = isSelected ? "background: #fde68a; border-color: #d97706;" : "background: #f3f4f6; border-color: #e5e7eb;";
                                     return `
-                                        <button class="cheer-btn" data-row="${index + 2}" data-icon="${icon}" style="cursor: pointer; padding: 4px 10px; border-radius: 20px; border: 1px solid; ${bgStyle} font-size: 0.9rem;">
+                                        <button class="cheer-btn" data-row="${originalIndex + 2}" data-icon="${icon}" style="cursor: pointer; padding: 4px 10px; border-radius: 20px; border: 1px solid; ${bgStyle} font-size: 0.9rem;">
                                             ${icon} <span class="count">${counts[icon]}</span>
                                         </button>
                                     `;
@@ -190,7 +258,7 @@
                         </div>
                     `;
 
-                    // ボタンをクリックしたときの処理（トグル・取り消し・保存対応）
+                    // ボタンをクリックしたときの処理
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", async () => {
@@ -199,9 +267,9 @@
                             
                             let newMyIcon = "";
                             if (myCurrentIcon === clickedIcon) {
-                                newMyIcon = ""; // 同じものを押したら解除
+                                newMyIcon = ""; 
                             } else {
-                                newMyIcon = clickedIcon; // 新しく選んだ、または変更
+                                newMyIcon = clickedIcon; 
                             }
                             
                             if (newMyIcon) {
@@ -210,14 +278,12 @@
                                 localStorage.removeItem(storageKey);
                             }
                             
-                            // ブラウザ識別IDの取得・生成
                             let browserId = localStorage.getItem("browser_id");
                             if (!browserId) {
                                 browserId = 'user_' + Math.random().toString(36).substring(2, 9);
                                 localStorage.setItem("browser_id", browserId);
                             }
                             
-                            // 既存のエントリから自分のIDが含まれるものを除外し、新しく選択したものを追加
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
                             if (newMyIcon) {
                                 updatedEntries.push(`${newMyIcon}:${browserId}`);
@@ -240,7 +306,7 @@
                                 
                                 const result = await response.json();
                                 if (result.status === "success") {
-                                    fetchGalleryData(); // 最新データに再描画してカウントを反映
+                                    fetchGalleryData(); 
                                 } else {
                                     alert("保存に失敗しました: " + result.message);
                                 }
@@ -253,7 +319,7 @@
                         });
                     });
 
-                    galleryEl.appendChild(card);
+                    currentGrid.appendChild(card);
                 });
         
             } catch (error) {
