@@ -113,12 +113,11 @@
     <div id="gallery" class="gallery-container"></div>
 
     <script>
-        // 日時を見やすくフォーマットする関数（例: 2026-10-31 23:48）
+        // 日時を見やすくフォーマットする関数（例: 2026/10/31 23:48）
         function formatDateTime(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
             if (isNaN(date.getTime())) {
-                // ISO形式でない場合はそのまま返すか、綺麗に切り詰める
                 return dateString.replace('T', ' ').replace(/\.\d+Z$/, '');
             }
             const yyyy = date.getFullYear();
@@ -129,7 +128,7 @@
             return `${yyyy}/${mm}/${dd} ${hh}:${min}`;
         }
 
-        // 日付部分（YYYY-MM-DD）のみを取り出す関数（グループ分け用）
+        // 日付部分（YYYY年MM月DD日）のみを取り出す関数（グループ分け用）
         function getDateOnly(dateString) {
             if (!dateString) return '日付不明';
             const date = new Date(dateString);
@@ -139,7 +138,7 @@
             const yyyy = date.getFullYear();
             const mm = String(date.getMonth() + 1).padStart(2, '0');
             const dd = String(date.getDate()).padStart(2, '0');
-            return `${yyyy}年${mm}月${dd日}`;
+            return `${yyyy}年${mm}月${dd}日`;
         }
 
         async function fetchGalleryData() {
@@ -166,8 +165,7 @@
                 
                 galleryEl.innerHTML = "";
                 
-                // 日付ごとにグループ化するために、日付順（新しい順、または古い順）に整理
-                // ここでは申込日時の降順（新しい順）で並び替え
+                // 申込日時の降順（新しい順）で並び替え
                 data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
                 let currentGroupDate = "";
@@ -218,12 +216,10 @@
                         }
                     });
 
-                    // 実際の元のデータ配列内でのインデックス（data内での位置）を保持
                     const originalIndex = data.indexOf(item);
                     const storageKey = `liked_post_${originalIndex}`;
                     const myCurrentIcon = localStorage.getItem(storageKey) || "";
 
-                    // 整形された日時を表示
                     const formattedDate = formatDateTime(rawDate);
 
                     card.innerHTML = `
