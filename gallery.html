@@ -215,9 +215,9 @@
                 let currentGrid = null;
 
                 data.forEach((item) => {
-                    console.log("取得したアイテムデータ:", item);
                     const rawDate = item.date || "";
                     const groupDateStr = getDateOnly(rawDate);
+                    // applicationId がない場合は自動的に空文字やフォールバックを設定
                     const appId = item.applicationId || item.id || ""; 
 
                     if (groupDateStr !== currentGroupDate) {
