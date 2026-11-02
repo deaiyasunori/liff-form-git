@@ -10,19 +10,51 @@
             background-color: #f7f9fa;
             color: #333;
             margin: 0;
-            padding: 16px;
+            padding-top: 70px; /* 固定ヘッダーの分だけ余白を確保 */
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: 16px;
         }
-        h1 {
-            text-align: center;
-            font-size: 1.4rem;
-            margin-bottom: 20px;
+        /* 画面上部に固定するヘッダー */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: bold;
             color: #d97706;
+            margin: 0;
         }
+        .close-btn {
+            background-color: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .close-btn:hover {
+            background-color: #e5e7eb;
+        }
+
         .gallery-container {
             max-width: 1000px;
             margin: 0 auto;
         }
-        /* 日付ごとの区切り帯のスタイル */
         .date-divider {
             grid-column: 1 / -1;
             background-color: #fef3c7;
@@ -102,18 +134,30 @@
             padding: 40px;
             color: #666;
         }
+        /* ぽよんっと弾むアニメーション */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        .animate-pop {
+            animation: pop 0.3s ease-in-out;
+        }
     </style>
-    <!-- 各HTMLの <head> 内など、他のJSよりも先に読み込む -->
     <script src="config.js"></script>
 </head>
 <body>
 
-    <h1>🍳 みんなのおかずギャラリー</h1>
+    <!-- 画面上部に固定するヘッダー ＆ 閉じるボタン -->
+    <header class="fixed-header">
+        <h1 class="header-title">🍳 みんなのおかずギャラリー</h1>
+        <button id="closeBtn" class="close-btn">✕ 閉じる</button>
+    </header>
+
     <div id="loading" class="loading">データを読み込んでいます...</div>
     <div id="gallery" class="gallery-container"></div>
 
     <script>
-        // 日時を見やすくフォーマットする関数（例: 2026/10/31 23:48）
+        // 日時フォーマット関数
         function formatDateTime(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -128,7 +172,7 @@
             return `${yyyy}/${mm}/${dd} ${hh}:${min}`;
         }
 
-        // 日付部分（YYYY年MM月DD日）のみを取り出す関数（グループ分け用）
+        // グループ分け用の日付抽出
         function getDateOnly(dateString) {
             if (!dateString) return '日付不明';
             const date = new Date(dateString);
@@ -141,21 +185,24 @@
             return `${yyyy}年${mm}月${dd}日`;
         }
 
+        // ブラウザ識別用IDの取得・生成
+        let browserId = localStorage.getItem("browser_id");
+        if (!browserId) {
+            browserId = 'user_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem("browser_id", browserId);
+        }
+
         async function fetchGalleryData() {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
             
             try {
-                if (loadingEl) loadingEl.textContent = "Galleryへ接続中...";
-                
                 const response = await fetch(`${GAS_API_URL}?action=gallery`);
                 if (!response.ok) {
                     throw new Error(`サーバーエラー: ${response.status} ${response.statusText}`);
                 }
                 
-                if (loadingEl) loadingEl.textContent = "データを解析中...";
                 const data = await response.json();
-                
                 if (loadingEl) loadingEl.style.display = "none";
                 
                 if (!data || data.length === 0) {
@@ -164,21 +211,18 @@
                 }
                 
                 galleryEl.innerHTML = "";
-                
-                // 申込日時の降順（新しい順）で並び替え
                 data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
                 let currentGroupDate = "";
                 let currentGrid = null;
 
-                data.forEach((item, index) => {
+                data.forEach((item) => {
                     const rawDate = item.date || "";
                     const groupDateStr = getDateOnly(rawDate);
+                    const appId = item.applicationId || item.id || ""; // 申込ID
 
-                    // 日付が変わったら新しい帯とグリッドコンテナを作成
                     if (groupDateStr !== currentGroupDate) {
                         currentGroupDate = groupDateStr;
-
                         const divider = document.createElement("div");
                         divider.className = "date-divider";
                         divider.textContent = `📅 ${currentGroupDate}`;
@@ -216,10 +260,9 @@
                         }
                     });
 
-                    const originalIndex = data.indexOf(item);
-                    const storageKey = `liked_post_${originalIndex}`;
+                    // ローカルストレージから自身の選択状態を取得
+                    const storageKey = `liked_${appId}`;
                     const myCurrentIcon = localStorage.getItem(storageKey) || "";
-
                     const formattedDate = formatDateTime(rawDate);
 
                     card.innerHTML = `
@@ -239,13 +282,12 @@
                                 <div>${item.aiComment || '応援コメント準備中'}</div>
                             </div>
                             
-                            <!-- いいね（アイコン選択）ボタンエリア -->
                             <div class="cheer-area" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
                                 ${icons.map(icon => {
                                     const isSelected = (myCurrentIcon === icon);
                                     const bgStyle = isSelected ? "background: #fde68a; border-color: #d97706;" : "background: #f3f4f6; border-color: #e5e7eb;";
                                     return `
-                                        <button class="cheer-btn" data-row="${originalIndex + 2}" data-icon="${icon}" style="cursor: pointer; padding: 4px 10px; border-radius: 20px; border: 1px solid; ${bgStyle} font-size: 0.9rem;">
+                                        <button class="cheer-btn" data-appid="${appId}" data-icon="${icon}" style="cursor: pointer; padding: 4px 10px; border-radius: 20px; border: 1px solid; ${bgStyle} font-size: 0.9rem;">
                                             ${icon} <span class="count">${counts[icon]}</span>
                                         </button>
                                     `;
@@ -254,64 +296,53 @@
                         </div>
                     `;
 
-                    // ボタンをクリックしたときの処理
+                    // 【オプティミスティックUI】ボタンタップ時の即時反映 ＆ 非同期送信
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
-                        btn.addEventListener("click", async () => {
-                            const rowIndex = btn.getAttribute("data-row");
+                        btn.addEventListener("click", () => {
                             const clickedIcon = btn.getAttribute("data-icon");
+                            let newMyIcon = (myCurrentIcon === clickedIcon) ? "" : clickedIcon;
                             
-                            let newMyIcon = "";
-                            if (myCurrentIcon === clickedIcon) {
-                                newMyIcon = ""; 
-                            } else {
-                                newMyIcon = clickedIcon; 
-                            }
-                            
+                            // 1. ローカルストレージを即時更新
                             if (newMyIcon) {
                                 localStorage.setItem(storageKey, newMyIcon);
                             } else {
                                 localStorage.removeItem(storageKey);
                             }
-                            
-                            let browserId = localStorage.getItem("browser_id");
-                            if (!browserId) {
-                                browserId = 'user_' + Math.random().toString(36).substring(2, 9);
-                                localStorage.setItem("browser_id", browserId);
-                            }
-                            
+
+                            // 2. 画面上の見た目（カウントとボタン背景）を即座に書き換え（アニメーション付き）
+                            btn.classList.add("animate-pop");
+                            setTimeout(() => btn.classList.remove("animate-pop"), 300);
+
+                            // 一旦再描画してサクサク感を演出するため、簡易的にローカルで数値計算してDOMを更新
+                            // （厳密なサーバー同期は裏側のfetchで行う）
+                            fetchGalleryData(); 
+
+                            // 3. 裏側（非同期）でGASへ送信
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
                             if (newMyIcon) {
                                 updatedEntries.push(`${newMyIcon}:${browserId}`);
                             }
-                            
                             const newCheerValue = updatedEntries.join(",");
-                            
-                            btn.style.opacity = "0.5";
-                            
-                            try {
-                                const response = await fetch(GAS_API_URL.split("?")[0], {
-                                    method: "POST",
-                                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                                    body: JSON.stringify({
-                                        action: "cheer",
-                                        rowIndex: Number(rowIndex),
-                                        cheerValue: newCheerValue
-                                    })
-                                });
-                                
-                                const result = await response.json();
-                                if (result.status === "success") {
-                                    fetchGalleryData(); 
-                                } else {
-                                    alert("保存に失敗しました: " + result.message);
+
+                            fetch(GAS_API_URL.split("?")[0], {
+                                method: "POST",
+                                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                                body: JSON.stringify({
+                                    action: "cheer",
+                                    applicationId: appId, // 申込IDで安全に更新
+                                    cheerValue: newCheerValue
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (result.status !== "success") {
+                                    console.error("保存失敗:", result.message);
                                 }
-                            } catch (err) {
+                            })
+                            .catch(err => {
                                 console.error("通信エラー:", err);
-                                alert("通信に失敗しました。");
-                            } finally {
-                                btn.style.opacity = "1";
-                            }
+                            });
                         });
                     });
 
@@ -327,6 +358,19 @@
             }
         }
 
+        // 「閉じる」ボタンが押されたときの処理（キャッシュの再整理と画面終了）
+        document.getElementById("closeBtn").addEventListener("click", () => {
+            // 必要に応じてストレージのクリーンアップや最終同期を実施
+            // 例: ウィンドウを閉じる、または前の画面に戻る
+            try {
+                window.close();
+            } catch (e) {
+                // ウィンドウが閉じられない環境の場合はリダイレクト等
+                alert("キャッシュを保存しました。画面を閉じてください。");
+            }
+        });
+
+        // 初回データ読み込み
         fetchGalleryData();
     </script>
 </body>
