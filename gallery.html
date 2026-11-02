@@ -10,12 +10,11 @@
             background-color: #f7f9fa;
             color: #333;
             margin: 0;
-            padding-top: 70px; /* 固定ヘッダーの分だけ余白を確保 */
+            padding-top: 70px;
             padding-left: 16px;
             padding-right: 16px;
             padding-bottom: 16px;
         }
-        /* 画面上部に固定するヘッダー */
         .fixed-header {
             position: fixed;
             top: 0;
@@ -50,7 +49,6 @@
         .close-btn:hover {
             background-color: #e5e7eb;
         }
-
         .gallery-container {
             max-width: 1000px;
             margin: 0 auto;
@@ -134,11 +132,11 @@
             padding: 40px;
             color: #666;
         }
-        /* ぽよんっと弾むアニメーション */
         @keyframes pop {
             0% { transform: scale(1); }
             50% { transform: scale(1.25); }
             100% { transform: scale(1); }
+        }
         .animate-pop {
             animation: pop 0.3s ease-in-out;
         }
@@ -147,17 +145,15 @@
 </head>
 <body>
 
-    <!-- 画面上部に固定するヘッダー ＆ 閉じるボタン -->
     <header class="fixed-header">
         <h1 class="header-title">🍳 みんなのおかずギャラリー</h1>
         <button id="closeBtn" class="close-btn">✕ 閉じる</button>
     </header>
 
-    <div id="loading" class="loading">データを読み込んでいます...</div>
+    <div id="loading" class="loading">Galleryデータを読み込んでいます...</div>
     <div id="gallery" class="gallery-container"></div>
 
     <script>
-        // 日時フォーマット関数
         function formatDateTime(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -172,7 +168,6 @@
             return `${yyyy}/${mm}/${dd} ${hh}:${min}`;
         }
 
-        // グループ分け用の日付抽出
         function getDateOnly(dateString) {
             if (!dateString) return '日付不明';
             const date = new Date(dateString);
@@ -219,7 +214,7 @@
                 data.forEach((item) => {
                     const rawDate = item.date || "";
                     const groupDateStr = getDateOnly(rawDate);
-                    const appId = item.applicationId || item.id || ""; // 申込ID
+                    const appId = item.applicationId || item.id || ""; 
 
                     if (groupDateStr !== currentGroupDate) {
                         currentGroupDate = groupDateStr;
@@ -250,19 +245,24 @@
                     icons.forEach(icon => counts[icon] = 0);
                     
                     const cheerEntries = rawCheer ? rawCheer.split(",") : [];
+                    
+                    // 自分がこの投稿に対してどのアイコンを押しているかをサーバーデータから直接判定
+                    let myCurrentIcon = "";
                     cheerEntries.forEach(entry => {
                         const trimmed = entry.trim();
                         if (!trimmed) return;
                         const parts = trimmed.split(":");
                         const icon = parts[0];
+                        const uid = parts[1];
+                        
                         if (counts[icon] !== undefined) {
                             counts[icon]++;
                         }
+                        if (uid === browserId) {
+                            myCurrentIcon = icon; // 自分が押したアイコンを特定
+                        }
                     });
 
-                    // ローカルストレージから自身の選択状態を取得
-                    const storageKey = `liked_${appId}`;
-                    const myCurrentIcon = localStorage.getItem(storageKey) || "";
                     const formattedDate = formatDateTime(rawDate);
 
                     card.innerHTML = `
@@ -296,41 +296,39 @@
                         </div>
                     `;
 
-                    // 【オプティミスティックUI】ボタンタップ時の即時反映 ＆ 非同期送信
+                    // ボタンタップ時の処理（オプティミスティックUI）
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
                             const clickedIcon = btn.getAttribute("data-icon");
                             let newMyIcon = (myCurrentIcon === clickedIcon) ? "" : clickedIcon;
                             
-                            // 1. ローカルストレージを即時更新
-                            if (newMyIcon) {
-                                localStorage.setItem(storageKey, newMyIcon);
-                            } else {
-                                localStorage.removeItem(storageKey);
-                            }
-
-                            // 2. 画面上の見た目（カウントとボタン背景）を即座に書き換え（アニメーション付き）
+                            // アニメーション適用
                             btn.classList.add("animate-pop");
                             setTimeout(() => btn.classList.remove("animate-pop"), 300);
 
-                            // 一旦再描画してサクサク感を演出するため、簡易的にローカルで数値計算してDOMを更新
-                            // （厳密なサーバー同期は裏側のfetchで行う）
-                            fetchGalleryData(); 
-
-                            // 3. 裏側（非同期）でGASへ送信
+                            // サーバーへ送信する新しいチアー文字列を組み立て
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
                             if (newMyIcon) {
                                 updatedEntries.push(`${newMyIcon}:${browserId}`);
                             }
                             const newCheerValue = updatedEntries.join(",");
 
+                            // 楽観的に配列データを書き換えて即時再描画
+                            item.cheer = newCheerValue;
+                            
+                            // 再度データを構築し直して画面を即時更新
+                            // （ローカルでカウントや見た目を即座に反映するための軽量再描画）
+                            // ※ ここではシンプルに最新状態を反映するためDOMを直接書き換えるか再フェッチします
+                            fetchGalleryData(); 
+
+                            // 裏側（非同期）でGASへ送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                                 body: JSON.stringify({
                                     action: "cheer",
-                                    applicationId: appId, // 申込IDで安全に更新
+                                    applicationId: appId,
                                     cheerValue: newCheerValue
                                 })
                             })
@@ -358,19 +356,14 @@
             }
         }
 
-        // 「閉じる」ボタンが押されたときの処理（キャッシュの再整理と画面終了）
         document.getElementById("closeBtn").addEventListener("click", () => {
-            // 必要に応じてストレージのクリーンアップや最終同期を実施
-            // 例: ウィンドウを閉じる、または前の画面に戻る
             try {
                 window.close();
             } catch (e) {
-                // ウィンドウが閉じられない環境の場合はリダイレクト等
-                alert("キャッシュを保存しました。画面を閉じてください。");
+                alert("画面を閉じてください。");
             }
         });
 
-        // 初回データ読み込み
         fetchGalleryData();
     </script>
 </body>
