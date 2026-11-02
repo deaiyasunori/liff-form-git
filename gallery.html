@@ -128,7 +128,6 @@
             border-left: 3px solid #10b981;
         }
 
-        /* 起動中のローディング演出 */
         .loading-container {
             text-align: center;
             padding: 60px 20px;
@@ -148,7 +147,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* アイコンボタン＆ぽよんアニメーション定義 */
         .cheer-btn {
             display: inline-flex;
             align-items: center;
@@ -158,19 +156,12 @@
             border-radius: 20px;
             border: 1px solid;
             font-size: 0.9rem;
-            transform: scale(1);
-            transition: transform 0.1s ease, background-color 0.2s;
-        }
-        @keyframes popAnim {
-            0% { transform: scale(1); }
-            40% { transform: scale(1.4); }
-            100% { transform: scale(1); }
-        }
-        .animate-pop {
-            animation: popAnim 0.35s ease-in-out !important;
+            background-color: #f3f4f6;
+            border-color: #e5e7eb;
+            transition: background-color 0.2s, border-color 0.2s;
         }
 
-        /* 画面最下部のAPI URL表示スタイル（横スクロール＆10秒フェードアウト） */
+        /* 画面最下部のAPI URL表示スタイル（横スクロール自動対応＆10秒フェードアウト） */
         .debug-footer {
             position: fixed;
             bottom: 0;
@@ -219,6 +210,12 @@
         const footerEl = document.getElementById("debugFooter");
         footerEl.textContent = "API: " + (typeof GAS_API_URL !== "undefined" ? GAS_API_URL : "未定義");
 
+        // ★ 後半部分（見たい部分）が最初から見えるように、表示直後に自動で右端へスクロール
+        setTimeout(() => {
+            footerEl.scrollLeft = footerEl.scrollWidth;
+        }, 100);
+
+        // 約10秒後にフェードアウトして非表示
         setTimeout(() => {
             footerEl.style.opacity = "0";
             setTimeout(() => {
@@ -316,16 +313,15 @@
                     
                     const rawCheer = item.cheer || ""; 
                     const icons = ["❤️", "👍", "✨", "😋"];
-                    const counts = {};
+                    
+                    let counts = {};
                     icons.forEach(icon => counts[icon] = 0);
                     
-                    const cheerEntries = rawCheer ? rawCheer.split(",") : [];
+                    let cheerEntries = rawCheer ? rawCheer.split(",").map(e => e.trim()).filter(Boolean) : [];
                     let myCurrentIcon = "";
                     
                     cheerEntries.forEach(entry => {
-                        const trimmed = entry.trim();
-                        if (!trimmed) return;
-                        const parts = trimmed.split(":");
+                        const parts = entry.split(":");
                         const icon = parts[0];
                         const uid = parts[1];
                         
@@ -370,42 +366,36 @@
                         </div>
                     `;
 
-                    // タップ時のアニメーション＆オプティミスティックUI
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
                             const clickedIcon = btn.getAttribute("data-icon");
                             
-                            // ぽよんアニメーションを確実に発火させる処理
-                            btn.classList.remove("animate-pop");
-                            void btn.offsetWidth; // ブラウザに再描画を強制
-                            btn.classList.add("animate-pop");
+                            let filteredEntries = cheerEntries.filter(entry => {
+                                const parts = entry.split(":");
+                                return parts[1] !== browserId;
+                            });
 
-                            // 即座に見た目を切り替え（オプティミスティックUI）
-                            let newMyIcon = myCurrentIcon;
                             if (myCurrentIcon === clickedIcon) {
                                 counts[clickedIcon] = Math.max(0, counts[clickedIcon] - 1);
-                                newMyIcon = "";
+                                myCurrentIcon = "";
                             } else {
                                 if (myCurrentIcon && counts[myCurrentIcon] > 0) {
                                     counts[myCurrentIcon] = Math.max(0, counts[myCurrentIcon] - 1);
                                 }
                                 counts[clickedIcon] = (counts[clickedIcon] || 0) + 1;
-                                newMyIcon = clickedIcon;
+                                myCurrentIcon = clickedIcon;
+                                filteredEntries.push(`${clickedIcon}:${browserId}`);
                             }
 
-                            myCurrentIcon = newMyIcon;
-                            
-                            let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
-                            if (newMyIcon) {
-                                updatedEntries.push(`${newMyIcon}:${browserId}`);
-                            }
-                            const newCheerValue = updatedEntries.join(",");
+                            cheerEntries = filteredEntries;
+                            const newCheerValue = cheerEntries.join(",");
 
                             cheerBtns.forEach(b => {
                                 const bIcon = b.getAttribute("data-icon");
                                 const countSpan = b.querySelector(".count");
                                 countSpan.textContent = counts[bIcon];
+                                
                                 if (bIcon === myCurrentIcon) {
                                     b.style.background = "#fde68a";
                                     b.style.borderColor = "#d97706";
@@ -428,7 +418,10 @@
                             .then(res => res.json())
                             .then(result => {
                                 if (result.status === "success") {
-                                    fetchGalleryData(true); 
+                                    // ★【修正点】サーバー側への保存完了を確実に待つため、1.5秒待ってからサイレント同期
+                                    setTimeout(() => {
+                                        fetchGalleryData(true);
+                                    }, 1500);
                                 }
                             })
                             .catch(err => {
