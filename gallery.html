@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>みんなのおかずギャラリー</title>
+    <!-- LINE LIFF SDKの読み込み -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -154,6 +156,15 @@
     <div id="gallery" class="gallery-container"></div>
 
     <script>
+        // LIFF初期化（LINE内アプリで閉じる動作を有効にするため）
+        document.addEventListener("DOMContentLoaded", () => {
+            if (typeof liff !== "undefined") {
+                liff.init({ liffId: "2011063891-Xynrvt83" }).catch(err => {
+                    console.warn("LIFF初期化スキップまたは失敗:", err);
+                });
+            }
+        });
+
         function formatDateTime(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -217,8 +228,7 @@
                 data.forEach((item) => {
                     const rawDate = item.date || "";
                     const groupDateStr = getDateOnly(rawDate);
-                    // applicationId がない場合は自動的に空文字やフォールバックを設定
-                    const appId = item.applicationId || item.id || ""; 
+                    const appId = item.applicationId || ""; 
 
                     if (groupDateStr !== currentGroupDate) {
                         currentGroupDate = groupDateStr;
@@ -299,6 +309,7 @@
                         </div>
                     `;
 
+                    // ★【オプティミスティックUIの実装】
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
@@ -308,14 +319,46 @@
                             btn.classList.add("animate-pop");
                             setTimeout(() => btn.classList.remove("animate-pop"), 300);
 
-                            // 2. 送信データの構築
+                            // 2. その場で画面上の見た目（カウントとボタン色）を即座に更新（オプティミスティックUI）
+                            let newMyIcon = myCurrentIcon;
+                            if (myCurrentIcon === clickedIcon) {
+                                // すでに押していた場合は解除（マイナス）
+                                counts[clickedIcon] = Math.max(0, counts[clickedIcon] - 1);
+                                newMyIcon = "";
+                            } else {
+                                // 別のアイコンまたは未選択の場合
+                                if (myCurrentIcon && counts[myCurrentIcon] > 0) {
+                                    counts[myCurrentIcon] = Math.max(0, counts[myCurrentIcon] - 1);
+                                }
+                                counts[clickedIcon] = (counts[clickedIcon] || 0) + 1;
+                                newMyIcon = clickedIcon;
+                            }
+
+                            // 状態をローカル変数に即時反映して再描画せずにUIの見た目を書き換える
+                            myCurrentIcon = newMyIcon;
+                            
+                            // 配列エントリもローカルで更新
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
-                            if (myCurrentIcon !== clickedIcon) {
-                                updatedEntries.push(`${clickedIcon}:${browserId}`);
+                            if (newMyIcon) {
+                                updatedEntries.push(`${newMyIcon}:${browserId}`);
                             }
                             const newCheerValue = updatedEntries.join(",");
 
-                            // 3. 裏側でGASへ非同期保存
+                            // ボタンの見た目（色とカウント数字）をその場で一瞬で書き換え
+                            cheerBtns.forEach(b => {
+                                const bIcon = b.getAttribute("data-icon");
+                                const countSpan = b.querySelector(".count");
+                                countSpan.textContent = counts[bIcon];
+                                if (bIcon === myCurrentIcon) {
+                                    b.style.background = "#fde68a";
+                                    b.style.borderColor = "#d97706";
+                                } else {
+                                    b.style.background = "#f3f4f6";
+                                    b.style.borderColor = "#e5e7eb";
+                                }
+                            });
+
+                            // 3. 裏側で非同期にGASへ送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -328,16 +371,14 @@
                             .then(res => res.json())
                             .then(result => {
                                 if (result.status === "success") {
-                                    // 4. 保存成功後に最新データをサイレント再取得して完全同期
+                                    // 4. 裏側で保存成功後、サーバーの最新データをサイレント同期
                                     fetchGalleryData(true); 
                                 } else {
                                     console.error("保存失敗:", result.message);
-                                    alert("保存に失敗しました。");
                                 }
                             })
                             .catch(err => {
                                 console.error("通信エラー:", err);
-                                alert("通信エラーが発生しました。");
                             });
                         });
                     });
@@ -354,10 +395,21 @@
             }
         }
 
+        // ★【LIFF対応の安全な「閉じる」ボタン処理】
         document.getElementById("closeBtn").addEventListener("click", () => {
             try {
-                window.close();
+                if (typeof liff !== "undefined" && liff.isInClient()) {
+                    // LINEアプリ内（LIFF）の場合はLIFFのウィンドウ閉じる機能を使用
+                    liff.closeWindow();
+                } else {
+                    // 通常のブラウザの場合
+                    window.close();
+                    setTimeout(() => {
+                        alert("画面を閉じてください。");
+                    }, 300);
+                }
             } catch (e) {
+                console.error("画面を閉じる際にエラーが発生しました:", e);
                 alert("画面を閉じてください。");
             }
         });
