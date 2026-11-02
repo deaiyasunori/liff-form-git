@@ -13,7 +13,7 @@
             padding-top: 70px;
             padding-left: 16px;
             padding-right: 16px;
-            padding-bottom: 70px; /* 下部URL表示用の余白 */
+            padding-bottom: 70px;
         }
         .fixed-header {
             position: fixed;
@@ -148,7 +148,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* アイコンタップ時のぽよんアニメーション（インラインでも確実に効くよう指定） */
+        /* アイコンタップ時のぽよんアニメーション */
         .cheer-btn {
             display: inline-flex;
             align-items: center;
@@ -169,7 +169,7 @@
             animation: pop 0.3s ease-in-out !important;
         }
 
-        /* 画面最下部のAPI URL表示スタイル */
+        /* 画面最下部のAPI URL表示スタイル（横スクロール可能＆フェードアウト対応） */
         .debug-footer {
             position: fixed;
             bottom: 0;
@@ -177,15 +177,22 @@
             width: 100%;
             background-color: #f3f4f6;
             border-top: 1px solid #e5e7eb;
-            text-align: center;
             font-size: 0.70rem;
             color: #6b7280;
             padding: 6px 12px;
             box-sizing: border-box;
             z-index: 999;
+            overflow-x: auto; /* 長い場合に横スクロールできるようにする */
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            text-align: left;
+            transition: opacity 0.8s ease; /* フェードアウト用 */
+        }
+        .debug-footer::-webkit-scrollbar {
+            height: 3px;
+        }
+        .debug-footer::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 3px;
         }
     </style>
     <script src="config.js"></script>
@@ -197,7 +204,7 @@
         <button id="closeBtn" class="close-btn">✕ 閉じる</button>
     </header>
 
-    <!-- 動きのあるリッチなローディング表示 -->
+    <!-- 動きのあるローディング表示 -->
     <div id="loading" class="loading-container">
         <div class="spinner"></div>
         <div style="font-weight: bold; color: #b45309;">データを読み込んでいます...</div>
@@ -206,12 +213,21 @@
 
     <div id="gallery" class="gallery-container"></div>
 
-    <!-- 画面下部に固定配置するGAS_API_URL -->
+    <!-- 画面下部に固定配置するGAS_API_URL（横スクロール対応） -->
     <div id="debugFooter" class="debug-footer"></div>
 
     <script>
-        // フッターにGAS_API_URLを表示
-        document.getElementById("debugFooter").textContent = "API: " + (typeof GAS_API_URL !== "undefined" ? GAS_API_URL : "未定義");
+        // フッターにGAS_API_URLを設定
+        const footerEl = document.getElementById("debugFooter");
+        footerEl.textContent = "API: " + (typeof GAS_API_URL !== "undefined" ? GAS_API_URL : "未定義");
+
+        // 約10秒後（10,000ミリ秒）にフッターをフェードアウトさせて非表示にする
+        setTimeout(() => {
+            footerEl.style.opacity = "0";
+            setTimeout(() => {
+                footerEl.style.display = "none";
+            }, 800); // フェードアウトのトランジション完了後に完全非表示
+        }, 10000);
 
         function formatDateTime(dateString) {
             if (!dateString) return '';
@@ -358,7 +374,7 @@
                         </div>
                     `;
 
-                    // タップ時のアニメーション＆オプティミスティックUIの確実に効く紐付け
+                    // タップ時のアニメーション＆オプティミスティックUI
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
@@ -366,7 +382,7 @@
                             
                             // 1. ぽよんアニメーションの強制再トリガー
                             btn.classList.remove("animate-pop");
-                            void btn.offsetWidth; // リフローを強制してアニメーションを再始動
+                            void btn.offsetWidth;
                             btn.classList.add("animate-pop");
                             setTimeout(() => btn.classList.remove("animate-pop"), 300);
 
