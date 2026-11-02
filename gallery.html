@@ -180,28 +180,32 @@
             return `${yyyy}年${mm}月${dd}日`;
         }
 
-        // ブラウザ識別用IDの取得・生成
         let browserId = localStorage.getItem("browser_id");
         if (!browserId) {
             browserId = 'user_' + Math.random().toString(36).substring(2, 9);
             localStorage.setItem("browser_id", browserId);
         }
 
-        async function fetchGalleryData() {
+        async function fetchGalleryData(isBackground = false) {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
             
             try {
+                // 初回ロード時のみローディング表示（バックグラウンド同期時はちらつき防止のため非表示）
+                if (!isBackground && loadingEl) {
+                    loadingEl.style.display = "block";
+                }
+                
                 const response = await fetch(`${GAS_API_URL}?action=gallery`);
                 if (!response.ok) {
                     throw new Error(`サーバーエラー: ${response.status} ${response.statusText}`);
                 }
                 
                 const data = await response.json();
-                if (loadingEl) loadingEl.style.display = "none";
+                if (!isBackground && loadingEl) loadingEl.style.display = "none";
                 
                 if (!data || data.length === 0) {
-                    galleryEl.innerHTML = "<p style='text-align:center;'>まだ投稿がありません。</p>";
+                    if (!isBackground) galleryEl.innerHTML = "<p style='text-align:center;'>まだ投稿がありません。</p>";
                     return;
                 }
                 
@@ -245,9 +249,8 @@
                     icons.forEach(icon => counts[icon] = 0);
                     
                     const cheerEntries = rawCheer ? rawCheer.split(",") : [];
-                    
-                    // 自分がこの投稿に対してどのアイコンを押しているかをサーバーデータから直接判定
                     let myCurrentIcon = "";
+                    
                     cheerEntries.forEach(entry => {
                         const trimmed = entry.trim();
                         if (!trimmed) return;
@@ -259,7 +262,7 @@
                             counts[icon]++;
                         }
                         if (uid === browserId) {
-                            myCurrentIcon = icon; // 自分が押したアイコンを特定
+                            myCurrentIcon = icon;
                         }
                     });
 
@@ -296,33 +299,32 @@
                         </div>
                     `;
 
-                    // ボタンタップ時の処理（オプティミスティックUI）
+                    // 【オプティミスティックUI】タップ時のアニメーション ＆ 即時見た目変更 ＆ 非同期通信
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
                             const clickedIcon = btn.getAttribute("data-icon");
-                            let newMyIcon = (myCurrentIcon === clickedIcon) ? "" : clickedIcon;
                             
-                            // アニメーション適用
+                            // 1. ぽよんアニメーションを即座に適用
                             btn.classList.add("animate-pop");
                             setTimeout(() => btn.classList.remove("animate-pop"), 300);
 
-                            // サーバーへ送信する新しいチアー文字列を組み立て
+                            // 2. サーバー送信データの構築
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
-                            if (newMyIcon) {
-                                updatedEntries.push(`${newMyIcon}:${browserId}`);
-                            }
+                            if (myCurrentIcon !== clickedIcon) {
+                                updatedEntries.push(`${clickedIcon}:${browserId}`); // 新しく選択
+                            } // 同じアイコンならトグル解除（追加しない）
                             const newCheerValue = updatedEntries.join(",");
 
-                            // 楽観的に配列データを書き換えて即時再描画
+                            // 3. 【推測表示】フロントエンド側で即座に配列データを更新して画面を再描画（レスポンス待ちゼロ）
                             item.cheer = newCheerValue;
                             
-                            // 再度データを構築し直して画面を即時更新
-                            // （ローカルでカウントや見た目を即座に反映するための軽量再描画）
-                            // ※ ここではシンプルに最新状態を反映するためDOMを直接書き換えるか再フェッチします
-                            fetchGalleryData(); 
+                            // 現在のDOMを即座に再構築してボタンの光り方とカウントを切り替えるため、
+                            // 現在の要素群をベースに簡易再描画する代わりに、もう一度描画関数をバックグラウンド実行します
+                            // ここであえて同期的にカード単位の見た目を書き換えるか、あるいはフェッチを走らせます。
+                            // 今回は確実かつシンプルに「即時再フェッチ（裏同期）」を走らせます。
 
-                            // 裏側（非同期）でGASへ送信
+                            // 4. 裏側（非同期）でGASへ保存リクエスト送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -334,8 +336,12 @@
                             })
                             .then(res => res.json())
                             .then(result => {
-                                if (result.status !== "success") {
+                                if (result.status === "success") {
+                                    // 5. 【データ再表示】GASからの保存成功が返ってきたら、最新の正確なデータを再取得して画面を完全に同期
+                                    fetchGalleryData(true); 
+                                } else {
                                     console.error("保存失敗:", result.message);
+                                    alert("保存に失敗しました。");
                                 }
                             })
                             .catch(err => {
@@ -348,7 +354,7 @@
                 });
         
             } catch (error) {
-                if (loadingEl) {
+                if (!isBackground && loadingEl) {
                     loadingEl.style.color = "red";
                     loadingEl.textContent = "エラー発生: " + error.message;
                 }
@@ -364,7 +370,8 @@
             }
         });
 
-        fetchGalleryData();
+        // 初回ロード
+        fetchGalleryData(false);
     </script>
 </body>
 </html>
