@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>みんなのおかずギャラリー</title>
-    <!-- LINE LIFF SDKの読み込み -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -15,7 +13,7 @@
             padding-top: 70px;
             padding-left: 16px;
             padding-right: 16px;
-            padding-bottom: 16px;
+            padding-bottom: 60px; /* 下部URL表示用の余白 */
         }
         .fixed-header {
             position: fixed;
@@ -134,13 +132,23 @@
             padding: 40px;
             color: #666;
         }
+        /* アイコンタップ時のぽよんアニメーション */
         @keyframes pop {
             0% { transform: scale(1); }
-            50% { transform: scale(1.25); }
+            50% { transform: scale(1.3); }
             100% { transform: scale(1); }
         }
         .animate-pop {
             animation: pop 0.3s ease-in-out;
+        }
+        /* 画面下部のURL表示用スタイル */
+        .debug-footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 40px;
+            word-break: break-all;
+            padding: 10px;
         }
     </style>
     <script src="config.js"></script>
@@ -155,15 +163,12 @@
     <div id="loading" class="loading">Galleryデータを読み込んでいます...</div>
     <div id="gallery" class="gallery-container"></div>
 
+    <!-- 要望①: 画面下部に小さくGAS_API_URLを表示 -->
+    <div id="debugFooter" class="debug-footer"></div>
+
     <script>
-        // LIFF初期化（LINE内アプリで閉じる動作を有効にするため）
-        document.addEventListener("DOMContentLoaded", () => {
-            if (typeof liff !== "undefined") {
-                liff.init({ liffId: "2011063891-Xynrvt83" }).catch(err => {
-                    console.warn("LIFF初期化スキップまたは失敗:", err);
-                });
-            }
-        });
+        // 設定されたAPIのURLをフッターに小さく表示
+        document.getElementById("debugFooter").textContent = "API: " + (typeof GAS_API_URL !== "undefined" ? GAS_API_URL : "未定義");
 
         function formatDateTime(dateString) {
             if (!dateString) return '';
@@ -191,6 +196,7 @@
             return `${yyyy}年${mm}月${dd}日`;
         }
 
+        // 一意のブラウザ識別IDの取得・保持
         let browserId = localStorage.getItem("browser_id");
         if (!browserId) {
             browserId = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -309,7 +315,7 @@
                         </div>
                     `;
 
-                    // ★【オプティミスティックUIの実装】
+                    // ② 要望②: タップ時のアニメーション & オプティミスティックUI
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
@@ -319,14 +325,12 @@
                             btn.classList.add("animate-pop");
                             setTimeout(() => btn.classList.remove("animate-pop"), 300);
 
-                            // 2. その場で画面上の見た目（カウントとボタン色）を即座に更新（オプティミスティックUI）
+                            // 2. その場で見た目を即座に切り替え（オプティミスティックUI）
                             let newMyIcon = myCurrentIcon;
                             if (myCurrentIcon === clickedIcon) {
-                                // すでに押していた場合は解除（マイナス）
                                 counts[clickedIcon] = Math.max(0, counts[clickedIcon] - 1);
                                 newMyIcon = "";
                             } else {
-                                // 別のアイコンまたは未選択の場合
                                 if (myCurrentIcon && counts[myCurrentIcon] > 0) {
                                     counts[myCurrentIcon] = Math.max(0, counts[myCurrentIcon] - 1);
                                 }
@@ -334,17 +338,15 @@
                                 newMyIcon = clickedIcon;
                             }
 
-                            // 状態をローカル変数に即時反映して再描画せずにUIの見た目を書き換える
                             myCurrentIcon = newMyIcon;
                             
-                            // 配列エントリもローカルで更新
                             let updatedEntries = cheerEntries.filter(entry => !entry.endsWith(":" + browserId));
                             if (newMyIcon) {
                                 updatedEntries.push(`${newMyIcon}:${browserId}`);
                             }
                             const newCheerValue = updatedEntries.join(",");
 
-                            // ボタンの見た目（色とカウント数字）をその場で一瞬で書き換え
+                            // ボタンの見た目（色と数字）を即時書き換え
                             cheerBtns.forEach(b => {
                                 const bIcon = b.getAttribute("data-icon");
                                 const countSpan = b.querySelector(".count");
@@ -358,7 +360,7 @@
                                 }
                             });
 
-                            // 3. 裏側で非同期にGASへ送信
+                            // 3. 裏側で非同期送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -371,10 +373,7 @@
                             .then(res => res.json())
                             .then(result => {
                                 if (result.status === "success") {
-                                    // 4. 裏側で保存成功後、サーバーの最新データをサイレント同期
                                     fetchGalleryData(true); 
-                                } else {
-                                    console.error("保存失敗:", result.message);
                                 }
                             })
                             .catch(err => {
@@ -395,21 +394,13 @@
             }
         }
 
-        // ★【LIFF対応の安全な「閉じる」ボタン処理】
         document.getElementById("closeBtn").addEventListener("click", () => {
             try {
-                if (typeof liff !== "undefined" && liff.isInClient()) {
-                    // LINEアプリ内（LIFF）の場合はLIFFのウィンドウ閉じる機能を使用
-                    liff.closeWindow();
-                } else {
-                    // 通常のブラウザの場合
-                    window.close();
-                    setTimeout(() => {
-                        alert("画面を閉じてください。");
-                    }, 300);
-                }
+                window.close();
+                setTimeout(() => {
+                    alert("画面を閉じてください。");
+                }, 300);
             } catch (e) {
-                console.error("画面を閉じる際にエラーが発生しました:", e);
                 alert("画面を閉じてください。");
             }
         });
