@@ -371,9 +371,12 @@
                         </div>
                     `;
 
+                    // ★カードがDOMとして構築された「後に」ボタンを取得してイベントを登録する
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
+                            console.log("いいねボタンが押されました！ 申込ID:", appId); // ブラウザのコンソールで確認用
+                            
                             const clickedIcon = btn.getAttribute("data-icon");
                             
                             let filteredEntries = cheerEntries.filter(entry => {
@@ -410,6 +413,7 @@
                                 }
                             });
 
+                            // GASへ送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -421,7 +425,7 @@
                             })
                             .then(res => res.json())
                             .then(result => {
-                                // サーバー保存成功時の処理（UIに影響を与えない完全非同期）
+                                console.log("サーバー保存成功:", result);
                             })
                             .catch(err => {
                                 console.error("通信エラー:", err);
