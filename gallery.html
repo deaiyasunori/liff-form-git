@@ -442,27 +442,18 @@
             }
         }
 
-        // 閉じるボタン（LIFF初期化を挟んで確実に閉じる安全版）
-        document.getElementById("closeBtn").addEventListener("click", async () => {
+        // 閉じるボタン（通常のWebブラウザ・アプリ内ブラウザ共通の安全版）
+        document.getElementById("closeBtn").addEventListener("click", () => {
             try {
-                if (typeof liff !== "undefined") {
-                    // まだ初期化されていない場合は初期化を試みる
-                    if (!liff.isInClient()) {
-                        window.close();
-                        return;
-                    }
-                    try {
-                        await liff.init({ liffId: "2011110086-cHHAa0m8" }); // ご自身のLIFF ID
-                    } catch (initErr) {
-                        // すでに初期化済みの場合はスルー
-                    }
-                    liff.closeWindow();
-                } else {
-                    window.close();
-                }
-            } catch (e) {
-                console.error("閉じる処理に失敗しました", e);
+                // ウィンドウを閉じる命令を試みる
                 window.close();
+                
+                // もしブラウザのセキュリティで閉じられなかった場合の保険（案内を出すなど）
+                setTimeout(() => {
+                    alert("このタブ（画面）を閉じてお戻りください。");
+                }, 200);
+            } catch (e) {
+                alert("このタブ（画面）を閉じてお戻りください。");
             }
         });
         // 起動時は最優先でデータを取得・描画（レスポンスを犠牲にしない設計）
