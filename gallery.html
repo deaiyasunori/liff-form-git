@@ -35,20 +35,6 @@
             color: #d97706;
             margin: 0;
         }
-        .close-btn {
-            background-color: #f3f4f6;
-            color: #374151;
-            border: 1px solid #d1d5db;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .close-btn:hover {
-            background-color: #e5e7eb;
-        }
         .gallery-container {
             max-width: 1000px;
             margin: 0 auto;
@@ -187,7 +173,6 @@
         }
     </style>
     <script src="config.js"></script>
-    <!-- LINE公式のLIFF SDK（画面を閉じる機能に必須） -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
@@ -253,17 +238,35 @@
             localStorage.setItem("browser_id", browserId);
         }
 
-        // ギャラリーデータを取得して描画する関数（isBackground=true のときはローディングを出さずに裏側でこっそり実行）
-        async function fetchGalleryData(isBackground = false) {
+        // 自動リトライ機能付きのデータ取得関数（最大3回挑戦）
+        async function fetchGalleryData(isBackground = false, retryCount = 0) {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
+            const maxRetries = 3; 
             
             try {
                 if (!isBackground && loadingEl) {
                     loadingEl.style.display = "block";
+                    // リトライ中（2回目以降）の場合にメッセージを切り替える
+                    if (retryCount > 0) {
+                        loadingEl.innerHTML = `
+                            <div class="spinner"></div>
+                            <div style="font-weight: bold; color: #b45309;">サーバーを起動しています... (${retryCount}/${maxRetries}回目)</div>
+                            <div style="font-size: 0.8rem; color: #888; margin-top: 4px;">スリープからの復帰に少し時間がかかっています</div>
+                        `;
+                    }
                 }
                 
-                const response = await fetch(`${GAS_API_URL}?action=gallery`);
+                // ⏱️ 8秒でタイムアウトさせるコントローラー
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                const response = await fetch(`${GAS_API_URL}?action=gallery`, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId); // 間に合ったらタイマー解除
+
                 if (!response.ok) {
                     throw new Error(`サーバーエラー: ${response.status} ${response.statusText}`);
                 }
@@ -276,10 +279,8 @@
                     return;
                 }
                 
-                // もしバックグラウンド同期（isBackground=true）ですでにカードが表示されている場合は、
-                // ユーザーの操作感を邪魔しないように、DOMの全再構築をスキップするか最新データに静かに合わせる
                 if (isBackground && galleryEl.children.length > 0) {
-                    return; // 描画中の要素を不意に書き換えて操作を邪魔しないための配慮
+                    return; 
                 }
                 
                 galleryEl.innerHTML = "";
@@ -371,12 +372,9 @@
                         </div>
                     `;
 
-                    // ★カードがDOMとして構築された「後に」ボタンを取得してイベントを登録する
                     const cheerBtns = card.querySelectorAll(".cheer-btn");
                     cheerBtns.forEach(btn => {
                         btn.addEventListener("click", () => {
-                            console.log("いいねボタンが押されました！ 申込ID:", appId); // ブラウザのコンソールで確認用
-                            
                             const clickedIcon = btn.getAttribute("data-icon");
                             
                             let filteredEntries = cheerEntries.filter(entry => {
@@ -413,7 +411,6 @@
                                 }
                             });
 
-                            // GASへ送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -424,9 +421,7 @@
                                 })
                             })
                             .then(res => res.json())
-                            .then(result => {
-                                console.log("サーバー保存成功:", result);
-                            })
+                            .then(result => {})
                             .catch(err => {
                                 console.error("通信エラー:", err);
                             });
@@ -437,15 +432,31 @@
                 });
         
             } catch (error) {
-                if (!isBackground && loadingEl) {
-                    loadingEl.style.color = "red";
-                    loadingEl.innerHTML = "<div style='font-weight:bold;'>エラーが発生しました</div><div style='font-size:0.8rem; margin-top:4px;'>" + error.message + "</div>";
+                console.warn(`試行 ${retryCount + 1} 回目でタイムアウト/エラー発生:`, error.message);
+
+                // まだリトライ回数が残っている場合は 1.5秒後に自動リトライ
+                if (!isBackground && retryCount < maxRetries) {
+                    const nextRetry = retryCount + 1;
+                    setTimeout(() => {
+                        fetchGalleryData(false, nextRetry);
+                    }, 1500);
+                    return;
                 }
-                console.error("詳細エラー:", error);
+
+                // すべてのリトライが失敗した場合のエラー表示
+                if (!isBackground && loadingEl) {
+                    loadingEl.style.color = "d97706";
+                    loadingEl.innerHTML = `
+                        <div style='font-weight:bold; color:#b45309;'>⚠️ サーバーの起動に時間がかかっています</div>
+                        <div style='font-size:0.85rem; margin-top:8px; color:#666;'>サーバーがスリープ状態から復帰するのに時間がかかっているようです。</div>
+                        <button onclick="location.reload()" style="margin-top:14px; padding:6px 16px; background:#d97706; color:#fff; border:none; border-radius:20px; font-weight:bold; cursor:pointer;">もう一度読み込む</button>
+                    `;
+                }
             }
         }
-        // 起動時は最優先でデータを取得・描画（レスポンスを犠牲にしない設計）
-        fetchGalleryData(false);
+
+        // 初回ロード実行
+        fetchGalleryData(false, 0);
     </script>
 </body>
 </html>
