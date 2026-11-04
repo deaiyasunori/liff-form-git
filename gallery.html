@@ -161,7 +161,6 @@
             transition: background-color 0.2s, border-color 0.2s;
         }
 
-        /* 画面最下部のAPI URL表示スタイル（横スクロール自動対応＆10秒フェードアウト） */
         .debug-footer {
             position: fixed;
             bottom: 0;
@@ -188,6 +187,8 @@
         }
     </style>
     <script src="config.js"></script>
+    <!-- LINE公式のLIFF SDK（画面を閉じる機能に必須） -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 
@@ -210,12 +211,10 @@
         const footerEl = document.getElementById("debugFooter");
         footerEl.textContent = "API: " + (typeof GAS_API_URL !== "undefined" ? GAS_API_URL : "未定義");
 
-        // ★ 後半部分（見たい部分）が最初から見えるように、表示直後に自動で右端へスクロール
         setTimeout(() => {
             footerEl.scrollLeft = footerEl.scrollWidth;
         }, 100);
 
-        // 約10秒後にフェードアウトして非表示
         setTimeout(() => {
             footerEl.style.opacity = "0";
             setTimeout(() => {
@@ -255,6 +254,7 @@
             localStorage.setItem("browser_id", browserId);
         }
 
+        // ギャラリーデータを取得して描画する関数（isBackground=true のときはローディングを出さずに裏側でこっそり実行）
         async function fetchGalleryData(isBackground = false) {
             const galleryEl = document.getElementById("gallery");
             const loadingEl = document.getElementById("loading");
@@ -275,6 +275,12 @@
                 if (!data || data.length === 0) {
                     if (!isBackground) galleryEl.innerHTML = "<p style='text-align:center;'>まだ投稿がありません。</p>";
                     return;
+                }
+                
+                // もしバックグラウンド同期（isBackground=true）ですでにカードが表示されている場合は、
+                // ユーザーの操作感を邪魔しないように、DOMの全再構築をスキップするか最新データに静かに合わせる
+                if (isBackground && galleryEl.children.length > 0) {
+                    return; // 描画中の要素を不意に書き換えて操作を邪魔しないための配慮
                 }
                 
                 galleryEl.innerHTML = "";
@@ -405,7 +411,6 @@
                                 }
                             });
 
-                            // 非同期送信
                             fetch(GAS_API_URL.split("?")[0], {
                                 method: "POST",
                                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -417,12 +422,7 @@
                             })
                             .then(res => res.json())
                             .then(result => {
-                                if (result.status === "success") {
-                                    // ★【修正点】サーバー側への保存完了を確実に待つため、1.5秒待ってからサイレント同期
-                                    setTimeout(() => {
-                                        fetchGalleryData(true);
-                                    }, 1500);
-                                }
+                                // サーバー保存成功時の処理（UIに影響を与えない完全非同期）
                             })
                             .catch(err => {
                                 console.error("通信エラー:", err);
@@ -442,17 +442,20 @@
             }
         }
 
+        // 閉じるボタン（LIFF環境対応：一発で綺麗に閉じます）
         document.getElementById("closeBtn").addEventListener("click", () => {
             try {
-                window.close();
-                setTimeout(() => {
-                    alert("画面を閉じてください。");
-                }, 300);
+                if (typeof liff !== "undefined") {
+                    liff.closeWindow();
+                } else {
+                    window.close();
+                }
             } catch (e) {
-                alert("画面を閉じてください。");
+                console.error("閉じる処理に失敗しました", e);
             }
         });
 
+        // 起動時は最優先でデータを取得・描画（レスポンスを犠牲にしない設計）
         fetchGalleryData(false);
     </script>
 </body>
