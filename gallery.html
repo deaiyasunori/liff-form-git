@@ -440,14 +440,6 @@
                 console.error("詳細エラー:", error);
             }
         }
-        // 閉じるボタン（シンプルなウィンドウクローズ）
-        document.getElementById("closeBtn").addEventListener("click", () => {
-            try {
-                window.close();
-            } catch (e) {
-                console.error("閉じる処理に失敗しました", e);
-            }
-        });
         // 起動時は最優先でデータを取得・描画（レスポンスを犠牲にしない設計）
         fetchGalleryData(false);
     </script>
