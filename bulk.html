@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>まとめ申込み</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f8f9fa; margin: 0; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #333; }
+        input, textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .readonly-field { background-color: #e9ecef; color: #495057; border: 1px solid #ced4da; }
+        button { width: 100%; padding: 12px; background: #07c160; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        .status { background: #eef9f1; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+        ul { padding-left: 20px; margin: 5px 0; color: #555; }
+    </style>
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="card">
+        <h2>まとめ申込み</h2>
+        <div class="status">
+            ログイン: <strong id="statusText">取得中...</strong>
+        </div>
+        <form id="bulkForm">
+            <input type="hidden" id="userId" />
+            
+            <div class="form-group">
+                <label>お名前（お届け先）</label>
+                <input type="text" id="userName" required />
+            </div>
+
+            <div class="form-group">
+                <label>選択した食材リスト</label>
+                <div id="itemListDisplay" class="readonly-field" style="padding: 10px; border-radius: 4px; min-height: 40px; font-size: 14px;">
+                    読み込み中...
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" disabled>まとめて申し込む</button>
+        </form>
+
+        <div id="completeMessage" style="display: none; text-align: center; padding: 40px 20px;">
+            <h2 style="color: #28a745; margin-bottom: 15px;">まとめ申込みが完了しました！</h2>
+            <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
+                受付が完了しました。<br>画面を閉じてトーク画面へお戻りください。
+            </p>
+            <button type="button" id="closeBtn" style="background-color: #00B900; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let selectedItemIds = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            // URLパラメータ（例: ?itemIds=F001,F003 または配列）を取得
+            const urlParams = new URLSearchParams(window.location.search);
+            const idsParam = urlParams.get('itemIds') || '';
+            selectedItemIds = idsParam ? idsParam.split(',') : [];
+
+            if (selectedItemIds.length === 0) {
+                document.getElementById('itemListDisplay').textContent = "選択された食材がありません。";
+                return;
+            }
+
+            // 簡易的にIDリストを表示
+            document.getElementById('itemListDisplay').innerHTML = `<ul>` + selectedItemIds.map(id => `<li>食材ID: ${id}</li>`).join('') + `</ul>`;
+
+            // LIFF初期化
+            liff.init({ liffId: "2011110086-x9ezpxYq" })
+                .then(async () => {
+                    if (!liff.isLoggedIn()) {
+                        liff.login();
+                        return;
+                    }
+                    try {
+                        const profile = await liff.getProfile();
+                        document.getElementById('statusText').textContent = profile.displayName + " 様";
+                        document.getElementById('userName').value = profile.displayName;
+                        document.getElementById('userId').value = profile.userId;
+                        document.getElementById('submitBtn').disabled = false;
+                    } catch (err) {
+                        document.getElementById('statusText').textContent = "エラー: " + err.message;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
+                });
+        });
+
+        // フォーム送信処理
+        document.getElementById('bulkForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = "送信中...";
+
+            const payload = {
+                action: "bulkOrder", // バックエンド側で振り分けるためのアクション名
+                userId: document.getElementById('userId').value,
+                userName: document.getElementById('userName').value,
+                itemIds: selectedItemIds
+            };
+
+            fetch(GAS_API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('bulkForm').style.display = 'none';
+                document.getElementById('completeMessage').style.display = 'block';
+            })
+            .catch(err => {
+                alert("送信に失敗しました: " + err.message);
+                btn.disabled = false;
+                btn.textContent = "まとめて申し込む";
+            });
+        });
+
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            if (typeof liff !== 'undefined' && liff.closeWindow) {
+                liff.closeWindow();
+            } else {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>
