@@ -58,17 +58,24 @@
         let selectedItemIds = [];
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // URLパラメータ（例: ?itemIds=F001,F003 または配列）を取得
             const urlParams = new URLSearchParams(window.location.search);
-            const idsParam = urlParams.get('itemIds') || '';
-            selectedItemIds = idsParam ? idsParam.split(',') : [];
+            
+            // パラメータ名 'addItemId' または 'itemIds' の両方に対応
+            let idsParam = urlParams.get('itemIds') || urlParams.get('addItemId') || '';
+            
+            // すでにURL内に複数ある場合やカンマ区切りの場合を考慮
+            if (idsParam) {
+                selectedItemIds = idsParam.split(',').map(id => id.trim()).filter(id => id);
+            } else {
+                selectedItemIds = [];
+            }
 
             if (selectedItemIds.length === 0) {
                 document.getElementById('itemListDisplay').textContent = "選択された食材がありません。";
                 return;
             }
 
-            // 簡易的にIDリストを表示
+            // リスト表示を更新
             document.getElementById('itemListDisplay').innerHTML = `<ul>` + selectedItemIds.map(id => `<li>食材ID: ${id}</li>`).join('') + `</ul>`;
 
             // LIFF初期化
@@ -92,7 +99,6 @@
                     document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
                 });
         });
-
         // フォーム送信処理
         document.getElementById('bulkForm').addEventListener('submit', (e) => {
             e.preventDefault();
