@@ -14,7 +14,7 @@ body {
   background-color: #f7f7f7;
   margin: 0;
   padding: 16px;
-  padding-bottom: 100px; /* 固定フッターに隠れないよう余白を確保 */
+  padding-bottom: 100px;
 }
 h2 {
   font-size: 1.2rem;
@@ -110,11 +110,10 @@ h2 {
 
 <h2>まとめ申込み一覧</h2>
 <div id="itemListContainer">
-  <!-- 食材カードが動的にここに読み込まれます -->
   <p style="text-align:center; color:#666;">読み込み中...</p>
 </div>
 
-<!-- 画面下部の固定ボタン（最初は非表示） -->
+<!-- 画面下部の固定ボタン -->
 <div id="submitContainer">
   <button id="submitBtn" onclick="openBulkConfirmModal()">選択終了（0個選択中）</button>
 </div>
@@ -137,7 +136,6 @@ let allItemsData = [];
 let currentUserName = "";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // LIFF初期化とデータ取得
   if (typeof liff !== 'undefined' && typeof LIFF_ID !== 'undefined') {
     liff.init({ liffId: LIFF_ID })
       .then(() => {
