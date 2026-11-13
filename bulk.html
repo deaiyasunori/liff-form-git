@@ -89,11 +89,11 @@
   <h2>📦 まとり申込み（食材選択）</h2>
   <div id="itemList" class="loading">食材データを読み込んでいます...</div>
 
-  <!-- 画面下部の「選択終了」ボタンエリア -->
-  <div class="footer-container">
+  <!-- 画面下部の「選択終了」ボタンエリア（初期は非表示にする） -->
+  <div id="submitContainer" class="footer-container" style="display: none;">
     <button id="submitBtn" class="submit-btn" disabled onclick="submitBulkOrder()">選択した食材を申し込む</button>
   </div>
-
+  
   <script>
     let userProfile = null;
     let masterItems = [];
@@ -149,13 +149,20 @@
       }
     }
 
-    // チェック状態の変化を監視してボタンの有効/無効を切り替える
+    // チェック状態の変化を監視してボタンの表示と有効/無効を切り替える
     function updateButtonState() {
       const checkedBoxes = document.querySelectorAll('input.item-checkbox:checked');
+      const submitContainer = document.getElementById('submitContainer');
       const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = checkedBoxes.length === 0;
+      
+      if (checkedBoxes.length > 0) {
+        submitContainer.style.display = "flex"; // 1つ以上選択されたらボタンを表示
+        submitBtn.disabled = false;             // ボタンを有効化
+      } else {
+        submitContainer.style.display = "none"; // 0個のときはボタンを非表示
+        submitBtn.disabled = true;              // ボタンを無効化
+      }
     }
-
     // まとめ申込み実行関数
     async function submitBulkOrder() {
       const checkedBoxes = document.querySelectorAll('input.item-checkbox:checked');
