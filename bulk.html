@@ -118,15 +118,34 @@
     async function fetchMasterData() {
       const container = document.getElementById('itemList');
       try {
-        const response = await fetch(GAS_API_URL + "?action=getItems"); // 必要に応じたエンドポイント
-        // ※もし全件取得APIがない場合はスプレッドシートや専用のエンドポイントから取得
-        // ここでは仮にマスターデータを描画するロジックを想定
+        const response = await fetch(GAS_API_URL + "?action=getItems");
+        const data = await response.json();
         
-        // 仮データの表示（実際の運用に合わせてGAS側からマスターを取得する処理に接続してください）
-        container.innerHTML = '<p style="text-align:center; color:#666;">※食材マスターの読み込み処理をここに構築します。</p>';
+        masterItems = data.items || [];
+        
+        if (masterItems.length === 0) {
+          container.innerHTML = '<p style="text-align:center; color:#666;">利用可能な食材がありません。</p>';
+          return;
+        }
+    
+        let html = '';
+        masterItems.forEach(item => {
+          html += `
+            <div class="item-card">
+              <input type="checkbox" class="item-checkbox" value="${item.id}" onchange="updateButtonState()">
+              <div class="item-info">
+                <div class="item-name">${item.name}</div>
+                <div class="item-stock">在庫・残り: ${item.stock || 'なし'}</div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
         
       } catch (e) {
         container.innerHTML = '<p style="color:red; text-align:center;">データの取得に失敗しました。</p>';
+        console.log(e);
       }
     }
 
