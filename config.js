@@ -3,7 +3,7 @@
 // ==========================================
 const CONFIG = {
     // GASのWebアプリURL（ここで1箇所だけ管理する）
-    GAS_API_URL: "https://script.google.com/macros/s/AKfycbwXERdwdRnr6ivJzXVPPepv-sd6W37nwTlNIkF97nO8JX1DH6e66PMqy3L1Et00Evr6/exec",
+    GAS_API_URL: "https://script.google.com/macros/s/AKfycbx3h5w_cJq4uEVZZiXNyFgOW-qq7t7j3wZpcUyhEgvCaYc4FX-cZDKtNInZ1aQrWJ6Z/exec",
     
     // 【将来の拡張用】GAS側や外部から動的にURLを設定・上書きするメソッド
     setCustomUrl: function(newUrl) {
