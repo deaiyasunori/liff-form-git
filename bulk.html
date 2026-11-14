@@ -1,369 +1,420 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>まとめ申込み</title>
-<!-- LIFF SDK -->
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<!-- 共通設定ファイル -->
-<script src="config.js"></script>
-<style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #f7f7f7;
-  margin: 0;
-  padding: 16px;
-  padding-bottom: 100px;
-}
-h2 {
-  font-size: 1.2rem;
-  color: #333;
-  text-align: center;
-  margin-bottom: 16px;
-}
-.item-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.item-info {
-  flex-grow: 1;
-}
-.item-name {
-  font-weight: bold;
-  font-size: 1rem;
-  color: #333;
-}
-.item-stock {
-  font-size: 0.85rem;
-  color: #666;
-  margin-top: 4px;
-}
-.add-bulk-btn {
-  background-color: #06c755;
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-weight: bold;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.add-bulk-btn:disabled {
-  background-color: #28a745;
-  cursor: default;
-}
-/* 画面下部固定ボタン */
-#submitContainer {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: #fff;
-  padding: 12px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-  z-index: 999;
-  box-sizing: border-box;
-  text-align: center;
-}
-#submitBtn {
-  width: 100%;
-  max-width: 500px;
-  padding: 14px;
-  background: #06c755;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 16px;
-  cursor: pointer;
-}
-/* モーダル */
-#bulkModal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  background: #fff;
-  width: 90%;
-  max-width: 400px;
-  border-radius: 8px;
-  padding: 16px;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>まとめ申込み</title>
+  <!-- LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- 共通設定ファイル -->
+  <script src="config.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f7f7f7;
+      margin: 0;
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+    h2 {
+      font-size: 1.2rem;
+      color: #333;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .item-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .item-info {
+      flex-grow: 1;
+      padding-right: 12px;
+    }
+    .item-name {
+      font-weight: bold;
+      font-size: 1rem;
+      color: #333;
+    }
+    .item-stock {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 4px;
+    }
+    .item-detail {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 2px;
+    }
+    /* ボタンの幅を統一（固定幅または最小幅を設定） */
+    .add-bulk-btn {
+      background-color: #06c755;
+      color: #fff;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      width: 135px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .add-bulk-btn:disabled {
+      background-color: #28a745;
+      cursor: default;
+    }
+    /* 画面下部固定ボタン */
+    #submitContainer {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #fff;
+      padding: 12px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      z-index: 999;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    #submitBtn {
+      width: 100%;
+      max-width: 500px;
+      padding: 14px;
+      background: #06c755;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    /* モーダル */
+    #bulkModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #fff;
+      width: 90%;
+      max-width: 450px;
+      border-radius: 8px;
+      padding: 16px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .modal-input-group {
+      margin-bottom: 12px;
+    }
+    .modal-input-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .modal-input-group input, .modal-input-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 <body>
 
-<h2>まとめ申込み一覧</h2>
-<div id="itemListContainer">
-  <p style="text-align:center; color:#666;">読み込み中...</p>
-</div>
+  <h2>まとめ申込み一覧</h2>
+  <div id="itemListContainer">
+    <p style="text-align:center; color:#666;">読み込み中...</p>
+  </div>
 
-<!-- 画面下部の固定ボタン -->
-<div id="submitContainer">
-  <button id="submitBtn" onclick="openBulkConfirmModal()">選択終了（0個選択中）</button>
-</div>
+  <!-- 画面下部の固定ボタン -->
+  <div id="submitContainer">
+    <button id="submitBtn" onclick="openBulkConfirmModal()">選択終了（0個選択中）</button>
+  </div>
 
-<!-- 選択確認・数量変更用モーダル画面 -->
-<div id="bulkModal">
-  <div class="modal-content">
-    <h3 style="margin-top: 0; font-size: 1.1rem; text-align: center;">選択中の食材確認・数量変更</h3>
-    <div id="modalItemList"></div>
-    <div style="margin-top: 16px; display: flex; gap: 8px;">
-      <button type="button" onclick="closeBulkConfirmModal()" style="flex: 1; padding: 10px; background: #ccc; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">戻る</button>
-      <button type="button" onclick="submitBulkOrder()" style="flex: 1; padding: 10px; background: #06c755; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">申し込む</button>
+  <!-- 選択確認・数量変更・追加項目用モーダル画面 -->
+  <div id="bulkModal">
+    <div class="modal-content">
+      <h3 style="margin-top: 0; font-size: 1.1rem; text-align: center;">まとめ申込み内容の確認</h3>
+      
+      <!-- 単数申込時と同様の共通入力項目 -->
+      <div class="modal-input-group">
+        <label for="modalUserName">お名前（お届け先）</label>
+        <input type="text" id="modalUserName" placeholder="お名前を入力してください">
+      </div>
+      <div class="modal-input-group">
+        <label for="modalComment">一言どうぞ</label>
+        <textarea id="modalComment" rows="2" placeholder="メッセージがあればご記入ください"></textarea>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #eee; margin: 12px 0;">
+      
+      <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 8px;">選択した食材一覧</div>
+      <div id="modalItemList"></div>
+
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+        <button type="button" onclick="closeBulkConfirmModal()" style="flex: 1; padding: 10px; background: #ccc; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">戻る</button>
+        <button type="button" onclick="submitBulkOrder()" style="flex: 1; padding: 10px; background: #06c755; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">申し込む</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-let selectedItemsMap = new Map(); // key: itemId, value: { id, name, stock, quantity }
-let allItemsData = [];
-let currentUserName = "";
+  <script>
+    let selectedItemsMap = new Map(); // key: itemId, value: { id, name, stock, unit, location, date, quantity }
+    let allItemsData = []; 
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof liff !== 'undefined' && typeof LIFF_ID !== 'undefined') {
-    liff.init({ liffId: LIFF_ID })
-      .then(() => {
-        if (!liff.isLoggedIn()) {
-          liff.login();
-        } else {
-          liff.getProfile().then(profile => {
-            currentUserName = profile.displayName;
-            fetchItems();
-          }).catch(err => {
-            console.error(err);
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof liff !== 'undefined' && typeof LIFF_ID !== 'undefined') {
+        liff.init({ liffId: LIFF_ID })
+          .then(() => {
+            if (!liff.isLoggedIn()) {
+              liff.login();
+            } else {
+              liff.getProfile().then(profile => {
+                // LINEプロフィール名があれば初期値としてセット
+                const nameInput = document.getElementById('modalUserName');
+                if (nameInput && !nameInput.value) {
+                  nameInput.value = profile.displayName || "";
+                }
+                fetchItems();
+              }).catch(err => {
+                console.error(err);
+                fetchItems();
+              });
+            }
+          })
+          .catch(err => {
+            console.error("LIFF initialization failed", err);
             fetchItems();
           });
+      } else {
+        fetchItems();
+      }
+    });
+
+    // GASから食材マスターを取得
+    function fetchItems() {
+      const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
+      if (!url) {
+        document.getElementById('itemListContainer').innerHTML = '<p style="text-align:center; color:red;">GAS_API_URLが設定されていません。</p>';
+        return;
+      }
+
+      fetch(url + "?action=getItems")
+        .then(res => res.json())
+        .then(data => {
+          allItemsData = data.items || [];
+          renderItemList();
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('itemListContainer').innerHTML = '<p style="text-align:center; color:red;">データの取得に失敗しました。</p>';
+        });
+    }
+
+    // 一覧画面の描画
+    function renderItemList() {
+      const container = document.getElementById('itemListContainer');
+      if (allItemsData.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#666;">現在申し込める食材はありません。</p>';
+        return;
+      }
+
+      let html = '';
+      allItemsData.forEach(item => {
+        const unit = item.unit || '個';
+        const stockText = (item.stock !== undefined && item.stock !== "") ? `${item.stock}${unit}` : '在庫なし';
+        const limitDate = item.date ? `保管期限: ${item.date}` : '';
+
+        html += `
+          <div class="item-card">
+            <div class="item-info">
+              <div class="item-name">${escapeHtml(item.name)}</div>
+              <div class="item-stock">残り: ${stockText}</div>
+              ${limitDate ? `<div class="item-detail">${limitDate}</div>` : ''}
+            </div>
+            <button type="button" class="add-bulk-btn" onclick="addToBulk('${item.id}', '${escapeHtml(item.name)}', ${item.stock || 0}, '${unit}', this)">追加</button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // カートに追加
+    function addToBulk(id, name, stock, unit, btnElement) {
+      let currentQty = 0;
+      if (!selectedItemsMap.has(id)) {
+        selectedItemsMap.set(id, { id: id, name: name, stock: stock, unit: unit, quantity: 1 });
+        currentQty = 1;
+      } else {
+        let item = selectedItemsMap.get(id);
+        if (item.quantity < stock) {
+          item.quantity += 1;
+          currentQty = item.quantity;
+        } else {
+          alert("在庫の上限数に達しています。");
+          return;
+        }
+      }
+      updateFooterButtonState();
+
+      // ボタンの視覚的フィードバック
+      const originalText = btnElement.textContent;
+      btnElement.textContent = "追加完了 ✓";
+      btnElement.disabled = true;
+      setTimeout(() => {
+        btnElement.textContent = originalText;
+        btnElement.disabled = false;
+      }, 800);
+    }
+
+    // 下部ボタンの状態更新
+    function updateFooterButtonState() {
+      const submitContainer = document.getElementById('submitContainer');
+      const submitBtn = document.getElementById('submitBtn');
+      let totalPieces = 0;
+      selectedItemsMap.forEach((item) => {
+        totalPieces += item.quantity;
+      });
+
+      if (totalPieces > 0) {
+        submitContainer.style.display = "block";
+        submitBtn.textContent = `選択終了（${totalPieces}個選択中）`;
+      } else {
+        submitContainer.style.display = "none";
+      }
+    }
+
+    // 確認モーダルを開く
+    function openBulkConfirmModal() {
+      renderModalItemList();
+      document.getElementById('bulkModal').style.display = "flex";
+    }
+
+    function closeBulkConfirmModal() {
+      document.getElementById('bulkModal').style.display = "none";
+    }
+
+    // モーダル内の選択リスト描画
+    function renderModalItemList() {
+      const container = document.getElementById('modalItemList');
+      let html = '';
+      selectedItemsMap.forEach((item, id) => {
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px;">
+            <div>
+              <div style="font-weight: bold; font-size: 0.9rem;">${escapeHtml(item.name)}</div>
+              <div style="font-size: 0.75rem; color: #666;">上限: ${item.stock}${item.unit}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" onclick="changeModalQty('${id}', -1)" style="width: 28px; height: 28px; font-weight: bold; cursor: pointer;">-</button>
+              <span style="min-width: 20px; text-align: center; font-weight: bold; font-size: 0.9rem;">${item.quantity}</span>
+              <button type="button" onclick="changeModalQty('${id}', 1)" style="width: 28px; height: 28px; font-weight: bold; cursor: pointer;">+</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // 数量変更
+    function changeModalQty(id, delta) {
+      let item = selectedItemsMap.get(id);
+      if (!item) return;
+      item.quantity += delta;
+      if (item.quantity <= 0) {
+        selectedItemsMap.delete(id);
+      } else if (item.quantity > item.stock) {
+        item.quantity = item.stock;
+      }
+      updateFooterButtonState();
+      if (selectedItemsMap.size === 0) {
+        closeBulkConfirmModal();
+      } else {
+        renderModalItemList();
+      }
+    }
+
+    // 申し込み確定（GASへ送信）
+    function submitBulkOrder() {
+      if (selectedItemsMap.size === 0) return;
+
+      const userName = document.getElementById('modalUserName').value.trim();
+      if (!userName) {
+        alert("お名前（お届け先）を入力してください。");
+        return;
+      }
+      const comment = document.getElementById('modalComment').value.trim();
+
+      const itemsArray = [];
+      selectedItemsMap.forEach((item) => {
+        itemsArray.push({ id: item.id, quantity: item.quantity });
+      });
+
+      const userId = (typeof liff !== 'undefined' && liff.getContext()) ? liff.getContext().userId : "test_user";
+
+      const payload = {
+        action: "bulkOrder",
+        userId: userId,
+        userName: userName,
+        comment: comment,
+        items: itemsArray
+      };
+
+      const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
+      fetch(url, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "success") {
+          alert("まとめて申し込みが完了しました！");
+          selectedItemsMap.clear();
+          updateFooterButtonState();
+          closeBulkConfirmModal();
+          location.reload();
+        } else {
+          alert("エラー: " + res.message);
         }
       })
       .catch(err => {
-        console.error("LIFF initialization failed", err);
-        fetchItems();
+        console.error(err);
+        alert("通信エラーが発生しました。");
       });
-  } else {
-    fetchItems();
-  }
-});
-
-// GASから食材マスターを取得して描画
-function fetchItems() {
-  const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
-  if (!url) {
-    document.getElementById('itemListContainer').innerHTML = '<p style="text-align:center; color:red;">GAS_API_URLが設定されていません。</p>';
-    return;
-  }
-
-  fetch(url + "?action=getItems")
-    .then(res => res.json())
-    .then(data => {
-      allItemsData = data.items || [];
-      renderItemList();
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById('itemListContainer').innerHTML = '<p style="text-align:center; color:red;">データの取得に失敗しました。</p>';
-    });
-}
-
-// 一覧画面の描画
-function renderItemList() {
-  const container = document.getElementById('itemListContainer');
-  if (allItemsData.length === 0) {
-    container.innerHTML = '<p style="text-align:center; color:#666;">現在申し込める食材はありません。</p>';
-    return;
-  }
-
-  let html = '';
-  allItemsData.forEach(item => {
-    html += `
-      <div class="item-card">
-        <div class="item-info">
-          <div class="item-name">${escapeHtml(item.name)}</div>
-          <div class="item-stock">残り: ${item.stock}個</div>
-        </div>
-        <button type="button" class="add-bulk-btn" onclick="addToBulk('${item.id}', '${escapeHtml(item.name)}', ${item.stock}, this)">まとめて申し込みに追加</button>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-// 「まとめて申し込みに追加」ボタンが押されたとき（フィードバック付き）
-function addToBulk(id, name, stock, btnElement) {
-  let currentQty = 0;
-  if (!selectedItemsMap.has(id)) {
-    selectedItemsMap.set(id, { id: id, name: name, stock: stock, quantity: 1 });
-    currentQty = 1;
-  } else {
-    let item = selectedItemsMap.get(id);
-    if (item.quantity < stock) {
-      item.quantity += 1;
-      currentQty = item.quantity;
-    } else {
-      alert("在庫の上限数に達しています。");
-      return;
     }
-  }
-  updateFooterButtonState();
 
-  // ボタンへの視覚的フィードバック演出
-  const originalText = btnElement.textContent;
-  btnElement.textContent = "追加しました！ ✓";
-  btnElement.disabled = true;
-
-  setTimeout(() => {
-    btnElement.textContent = originalText;
-    btnElement.disabled = false;
-  }, 800); // 0.8秒後に元のボタンに戻す
-}
-
-// 画面下部ボタンの状態（〇個選択中）を更新
-function updateFooterButtonState() {
-  const submitContainer = document.getElementById('submitContainer');
-  const submitBtn = document.getElementById('submitBtn');
-  
-  let totalPieces = 0;
-  selectedItemsMap.forEach((item) => {
-    totalPieces += item.quantity;
-  });
-  
-  if (totalPieces > 0) {
-    submitContainer.style.display = "block";
-    submitBtn.textContent = `選択終了（${totalPieces}個選択中）`;
-  } else {
-    submitContainer.style.display = "none";
-  }
-}
-
-// 「選択終了」ボタンタップ時：確認モーダルを展開
-function openBulkConfirmModal() {
-  renderModalItemList();
-  document.getElementById('bulkModal').style.display = "flex";
-}
-
-function closeBulkConfirmModal() {
-  document.getElementById('bulkModal').style.display = "none";
-}
-
-// モーダル内のリスト描画
-function renderModalItemList() {
-  const container = document.getElementById('modalItemList');
-  let html = '';
-  
-  selectedItemsMap.forEach((item, id) => {
-    html += `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-        <div>
-          <div style="font-weight: bold; font-size: 0.95rem;">${escapeHtml(item.name)}</div>
-          <div style="font-size: 0.8rem; color: #666;">残り: ${item.stock}</div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <button type="button" onclick="changeModalQty('${id}', -1)" style="width: 30px; height: 30px; font-weight: bold; cursor: pointer;">-</button>
-          <span style="min-width: 20px; text-align: center; font-weight: bold;">${item.quantity}</span>
-          <button type="button" onclick="changeModalQty('${id}', 1)" style="width: 30px; height: 30px; font-weight: bold; cursor: pointer;">+</button>
-        </div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-// モーダル内での数量変更
-function changeModalQty(id, delta) {
-  let item = selectedItemsMap.get(id);
-  if (!item) return;
-  item.quantity += delta;
-  
-  if (item.quantity <= 0) {
-    selectedItemsMap.delete(id);
-  } else if (item.quantity > item.stock) {
-    item.quantity = item.stock;
-  }
-  
-  updateFooterButtonState();
-  if (selectedItemsMap.size === 0) {
-    closeBulkConfirmModal();
-  } else {
-    renderModalItemList();
-  }
-}
-
-// 申し込み確定ボタン押下時（GASへ送信）
-function submitBulkOrder() {
-  if (selectedItemsMap.size === 0) return;
-
-  const itemsArray = [];
-  selectedItemsMap.forEach((item) => {
-    itemsArray.push({ id: item.id, quantity: item.quantity });
-  });
-
-  const userId = (typeof liff !== 'undefined' && liff.getContext()) ? liff.getContext().userId : "test_user";
-  const userName = currentUserName || "お名前";
-
-  const payload = {
-    action: "bulkOrder",
-    userId: userId,
-    userName: userName,
-    items: itemsArray
-  };
-
-  const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
-  
-  fetch(url, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(res => {
-    if (res.status === "success") {
-      alert("まとめて申し込みが完了しました！");
-      selectedItemsMap.clear();
-      updateFooterButtonState();
-      closeBulkConfirmModal();
-      location.reload();
-    } else {
-      alert("エラー: " + res.message);
+    function escapeHtml(str) {
+      return str.replace(/[&'`<>"]/g, function(match) {
+        return {
+          '&': '&amp;',
+          "'": '&#x27;',
+          '`': '`',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+        }[match];
+      });
     }
-  })
-  .catch(err => {
-    console.error(err);
-    alert("通信エラーが発生しました。");
-  });
-}
-
-function escapeHtml(str) {
-  return str.replace(/[&'`<>"]/g, function(match) {
-    return {
-      '&': '&amp;',
-      "'": '&#x27;',
-      '`': '`',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-    }[match];
-  });
-}
-</script>
-
+  </script>
 </body>
 </html>
