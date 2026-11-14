@@ -51,7 +51,7 @@
       color: #888;
       margin-top: 2px;
     }
-    /* ボタンの幅を統一（固定幅または最小幅を設定） */
+    /* ボタンの幅を統一 */
     .add-bulk-btn {
       background-color: #06c755;
       color: #fff;
@@ -67,7 +67,8 @@
       flex-shrink: 0;
     }
     .add-bulk-btn:disabled {
-      background-color: #28a745;
+      background-color: #cccccc;
+      color: #666666;
       cursor: default;
     }
     /* 画面下部固定ボタン */
@@ -151,12 +152,11 @@
     <button id="submitBtn" onclick="openBulkConfirmModal()">選択終了（0個選択中）</button>
   </div>
 
-  <!-- 選択確認・数量変更・追加項目用モーダル画面 -->
+  <!-- 確認用モーダル画面 -->
   <div id="bulkModal">
     <div class="modal-content">
       <h3 style="margin-top: 0; font-size: 1.1rem; text-align: center;">まとめ申込み内容の確認</h3>
       
-      <!-- 単数申込時と同様の共通入力項目 -->
       <div class="modal-input-group">
         <label for="modalUserName">お名前（お届け先）</label>
         <input type="text" id="modalUserName" placeholder="お名前を入力してください">
@@ -179,31 +179,33 @@
   </div>
 
   <script>
-    let selectedItemsMap = new Map(); // key: itemId, value: { id, name, stock, unit, location, date, quantity }
+    // まとめて申し込み用のLIFF ID（必要に応じて書き換えてください）
+    const BULK_LIFF_ID = "2011110086-X398MdFy"; 
+
+    let selectedItemsMap = new Map(); 
     let allItemsData = []; 
 
     document.addEventListener("DOMContentLoaded", () => {
-      if (typeof liff !== 'undefined' && typeof LIFF_ID !== 'undefined') {
-        liff.init({ liffId: LIFF_ID })
+      if (typeof liff !== 'undefined') {
+        liff.init({ liffId: BULK_LIFF_ID })
           .then(() => {
             if (!liff.isLoggedIn()) {
               liff.login();
             } else {
               liff.getProfile().then(profile => {
-                // LINEプロフィール名があれば初期値としてセット
                 const nameInput = document.getElementById('modalUserName');
-                if (nameInput && !nameInput.value) {
-                  nameInput.value = profile.displayName || "";
+                if (nameInput && profile.displayName) {
+                  nameInput.value = profile.displayName;
                 }
                 fetchItems();
               }).catch(err => {
-                console.error(err);
+                console.error("プロフィール取得失敗:", err);
                 fetchItems();
               });
             }
           })
           .catch(err => {
-            console.error("LIFF initialization failed", err);
+            console.error("LIFF初期化失敗:", err);
             fetchItems();
           });
       } else {
@@ -211,7 +213,6 @@
       }
     });
 
-    // GASから食材マスターを取得
     function fetchItems() {
       const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
       if (!url) {
@@ -231,7 +232,6 @@
         });
     }
 
-    // 一覧画面の描画
     function renderItemList() {
       const container = document.getElementById('itemListContainer');
       if (allItemsData.length === 0) {
@@ -242,52 +242,59 @@
       let html = '';
       allItemsData.forEach(item => {
         const unit = item.unit || '個';
-        const stockText = (item.stock !== undefined && item.stock !== "") ? `${item.stock}${unit}` : '在庫なし';
+        const stockVal = (item.stock !== undefined && item.stock !== "") ? Number(item.stock) : 0;
+        const stockText = `${stockVal}${unit}`;
         const limitDate = item.date ? `保管期限: ${item.date}` : '';
 
+        // すでに選択されている数量を取得
+        const currentSelected = selectedItemsMap.has(item.id) ? selectedItemsMap.get(item.id).quantity : 0;
+        const isMax = currentSelected >= stockVal || stockVal <= 0;
+        const btnText = stockVal <= 0 ? "在庫なし" : (isMax ? "上限に達しました" : "追加");
+        const isDisabled = stockVal <= 0 || isMax ? "disabled" : "";
+
         html += `
-          <div class="item-card">
+          <div class="item-card" id="card-${item.id}">
             <div class="item-info">
               <div class="item-name">${escapeHtml(item.name)}</div>
-              <div class="item-stock">残り: ${stockText}</div>
+              <div class="item-stock">残り: <span id="stock-text-${item.id}">${stockText}</span></div>
               ${limitDate ? `<div class="item-detail">${limitDate}</div>` : ''}
             </div>
-            <button type="button" class="add-bulk-btn" onclick="addToBulk('${item.id}', '${escapeHtml(item.name)}', ${item.stock || 0}, '${unit}', this)">追加</button>
+            <button type="button" id="btn-${item.id}" class="add-bulk-btn" ${isDisabled} onclick="addToBulk('${item.id}', '${escapeHtml(item.name)}', ${stockVal}, '${unit}')">${btnText}</button>
           </div>
         `;
       });
       container.innerHTML = html;
     }
 
-    // カートに追加
-    function addToBulk(id, name, stock, unit, btnElement) {
-      let currentQty = 0;
-      if (!selectedItemsMap.has(id)) {
-        selectedItemsMap.set(id, { id: id, name: name, stock: stock, unit: unit, quantity: 1 });
-        currentQty = 1;
-      } else {
-        let item = selectedItemsMap.get(id);
-        if (item.quantity < stock) {
-          item.quantity += 1;
-          currentQty = item.quantity;
-        } else {
-          alert("在庫の上限数に達しています。");
-          return;
-        }
-      }
-      updateFooterButtonState();
+    function addToBulk(id, name, stock, unit) {
+      let item = selectedItemsMap.get(id);
+      let currentQty = item ? item.quantity : 0;
 
-      // ボタンの視覚的フィードバック
-      const originalText = btnElement.textContent;
-      btnElement.textContent = "追加完了 ✓";
-      btnElement.disabled = true;
-      setTimeout(() => {
-        btnElement.textContent = originalText;
-        btnElement.disabled = false;
-      }, 800);
+      if (currentQty < stock) {
+        currentQty += 1;
+        selectedItemsMap.set(id, { id: id, name: name, stock: stock, unit: unit, quantity: currentQty });
+      }
+
+      updateFooterButtonState();
+      updateCardButtonState(id, stock);
     }
 
-    // 下部ボタンの状態更新
+    // 個別カードのボタン状態を更新（上限に達したら無効化）
+    function updateCardButtonState(id, stock) {
+      const item = selectedItemsMap.get(id);
+      const currentQty = item ? item.quantity : 0;
+      const btn = document.getElementById(`btn-${id}`);
+      if (!btn) return;
+
+      if (currentQty >= stock) {
+        btn.textContent = "上限に達しました";
+        btn.disabled = true;
+      } else {
+        btn.textContent = "追加";
+        btn.disabled = false;
+      }
+    }
+
     function updateFooterButtonState() {
       const submitContainer = document.getElementById('submitContainer');
       const submitBtn = document.getElementById('submitBtn');
@@ -304,7 +311,6 @@
       }
     }
 
-    // 確認モーダルを開く
     function openBulkConfirmModal() {
       renderModalItemList();
       document.getElementById('bulkModal').style.display = "flex";
@@ -312,9 +318,9 @@
 
     function closeBulkConfirmModal() {
       document.getElementById('bulkModal').style.display = "none";
+      renderItemList(); // モーダルを閉じたら一覧のボタン状態を再描画
     }
 
-    // モーダル内の選択リスト描画
     function renderModalItemList() {
       const container = document.getElementById('modalItemList');
       let html = '';
@@ -336,7 +342,6 @@
       container.innerHTML = html;
     }
 
-    // 数量変更
     function changeModalQty(id, delta) {
       let item = selectedItemsMap.get(id);
       if (!item) return;
@@ -347,14 +352,12 @@
         item.quantity = item.stock;
       }
       updateFooterButtonState();
+      renderModalItemList();
       if (selectedItemsMap.size === 0) {
         closeBulkConfirmModal();
-      } else {
-        renderModalItemList();
       }
     }
 
-    // 申し込み確定（GASへ送信）
     function submitBulkOrder() {
       if (selectedItemsMap.size === 0) return;
 
