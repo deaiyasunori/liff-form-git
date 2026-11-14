@@ -54,6 +54,11 @@ h2 {
   font-weight: bold;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+.add-bulk-btn:disabled {
+  background-color: #28a745;
+  cursor: default;
 }
 /* 画面下部固定ボタン */
 #submitContainer {
@@ -196,24 +201,40 @@ function renderItemList() {
           <div class="item-name">${escapeHtml(item.name)}</div>
           <div class="item-stock">残り: ${item.stock}個</div>
         </div>
-        <button type="button" class="add-bulk-btn" onclick="addToBulk('${item.id}', '${escapeHtml(item.name)}', ${item.stock})">まとめて申し込みに追加</button>
+        <button type="button" class="add-bulk-btn" onclick="addToBulk('${item.id}', '${escapeHtml(item.name)}', ${item.stock}, this)">まとめて申し込みに追加</button>
       </div>
     `;
   });
   container.innerHTML = html;
 }
 
-// 「まとめて申し込みに追加」ボタンが押されたとき
-function addToBulk(id, name, stock) {
+// 「まとめて申し込みに追加」ボタンが押されたとき（フィードバック付き）
+function addToBulk(id, name, stock, btnElement) {
+  let currentQty = 0;
   if (!selectedItemsMap.has(id)) {
     selectedItemsMap.set(id, { id: id, name: name, stock: stock, quantity: 1 });
+    currentQty = 1;
   } else {
     let item = selectedItemsMap.get(id);
     if (item.quantity < stock) {
       item.quantity += 1;
+      currentQty = item.quantity;
+    } else {
+      alert("在庫の上限数に達しています。");
+      return;
     }
   }
   updateFooterButtonState();
+
+  // ボタンへの視覚的フィードバック演出
+  const originalText = btnElement.textContent;
+  btnElement.textContent = "追加しました！ ✓";
+  btnElement.disabled = true;
+
+  setTimeout(() => {
+    btnElement.textContent = originalText;
+    btnElement.disabled = false;
+  }, 800); // 0.8秒後に元のボタンに戻す
 }
 
 // 画面下部ボタンの状態（〇個選択中）を更新
@@ -335,7 +356,7 @@ function escapeHtml(str) {
     return {
       '&': '&amp;',
       "'": '&#x27;',
-      '`': '&#x60;',
+      '`': '`',
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
