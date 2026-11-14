@@ -167,9 +167,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // GASから食材マスターを取得して描画
 function fetchItems() {
-  const url = (typeof GAS_WEB_APP_URL !== 'undefined') ? GAS_WEB_APP_URL : "";
+  const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
   if (!url) {
-    document.getElementById('itemListContainer').innerHTML = '<p style="text-align:center; color:red;">GAS_WEB_APP_URLが設定されていません。</p>';
+    document.getElementById('itemListContainer').innerHTML = '<p style="text-align:center; color:red;">GAS_API_URLが設定されていません。</p>';
     return;
   }
 
@@ -327,7 +327,7 @@ function submitBulkOrder() {
     items: itemsArray
   };
 
-  const url = (typeof GAS_WEB_APP_URL !== 'undefined') ? GAS_WEB_APP_URL : "";
+  const url = (typeof GAS_API_URL !== 'undefined') ? GAS_API_URL : "";
   
   fetch(url, {
     method: "POST",
