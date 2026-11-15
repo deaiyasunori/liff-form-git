@@ -192,7 +192,7 @@
   </div>
 
   <script>
-    // まとめて申し込み用のLIFF ID（必要に応じて書き換えてください）
+    // まとめて申し込み用のLIFF ID
     const BULK_LIFF_ID = "2011110086-X398MdFy"; 
 
     let selectedItemsMap = new Map(); 
@@ -416,4 +416,30 @@
           // モーダルを閉じ、商品一覧とフッターを隠して完了メッセージを表示
           closeBulkConfirmModal();
           document.getElementById('mainContainer').style.display = 'none';
-          document.getElementById('submitContainer').style.display = '
+          document.getElementById('submitContainer').style.display = 'none';
+          document.getElementById('completeMessage').style.display = 'block';
+        } else {
+          alert("エラー: " + res.message);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("通信エラーが発生しました。");
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&'`<>"]/g, function(match) {
+        return {
+          '&': '&amp;',
+          "'": '&#x27;',
+          '`': '`',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+        }[match];
+      });
+    }
+  </script>
+</body>
+</html>
