@@ -142,9 +142,22 @@
 </head>
 <body>
 
-  <h2>まとめ申込み一覧</h2>
-  <div id="itemListContainer">
-    <p style="text-align:center; color:#666;">読み込み中...</p>
+  <div id="mainContainer">
+    <h2>まとめ申込み一覧</h2>
+    <div id="itemListContainer">
+      <p style="text-align:center; color:#666;">読み込み中...</p>
+    </div>
+  </div>
+
+  <!-- 完了メッセージ表示用エリア（初期状態は非表示） -->
+  <div id="completeMessage" style="display: none; text-align: center; padding: 40px 20px;">
+    <h2 style="color: #28a745; margin-bottom: 15px;">お申し込みが完了しました！</h2>
+    <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
+      受付を受け付けました。<br>画面を閉じてトーク画面へお戻りください。
+    </p>
+    <button type="button" id="closeBtn" style="background-color: #00B900; color: white; border: none; padding: 12px 30px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">
+      閉じる
+    </button>
   </div>
 
   <!-- 画面下部の固定ボタン -->
@@ -186,6 +199,15 @@
     let allItemsData = []; 
 
     document.addEventListener("DOMContentLoaded", () => {
+      // 閉じるボタンのイベント設定
+      document.getElementById('closeBtn').addEventListener('click', () => {
+        if (typeof liff !== 'undefined' && liff.closeWindow) {
+          liff.closeWindow();
+        } else {
+          window.close();
+        }
+      });
+
       if (typeof liff !== 'undefined') {
         liff.init({ liffId: BULK_LIFF_ID })
           .then(() => {
@@ -391,33 +413,7 @@
       .then(res => res.json())
       .then(res => {
         if (res.status === "success") {
-          alert("まとめて申し込みが完了しました！");
-          selectedItemsMap.clear();
-          updateFooterButtonState();
+          // モーダルを閉じ、商品一覧とフッターを隠して完了メッセージを表示
           closeBulkConfirmModal();
-          location.reload();
-        } else {
-          alert("エラー: " + res.message);
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert("通信エラーが発生しました。");
-      });
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/[&'`<>"]/g, function(match) {
-        return {
-          '&': '&amp;',
-          "'": '&#x27;',
-          '`': '`',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-        }[match];
-      });
-    }
-  </script>
-</body>
-</html>
+          document.getElementById('mainContainer').style.display = 'none';
+          document.getElementById('submitContainer').style.display = '
