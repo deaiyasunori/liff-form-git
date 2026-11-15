@@ -139,10 +139,22 @@
           } catch (e) {
             console.error("在庫チェックエラー:", e);
           }
+        } else {
+          // 【追加】itemIdが無い（空の）場合は不正なアクセスとしてエラーを出す
+          showAlert("食材IDが指定されていません。正しいリンクからアクセスしてください。", () => {
+            if (typeof liff !== 'undefined' && liff.closeWindow) {
+              liff.closeWindow();
+            } else {
+              window.close();
+            }
+          });
+          return;
         }
   
         // 問題がなければ「申し込む」ボタンを有効化
         document.getElementById('submitBtn').disabled = false;
+      
+      
       })
       .catch(err => {
         document.getElementById('statusText').textContent = "初期化エラー: " + err.message;
